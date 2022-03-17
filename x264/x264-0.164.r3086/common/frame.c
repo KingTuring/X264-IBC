@@ -30,6 +30,12 @@
 static int align_stride( int x, int align, int disalign )
 {
     x = ALIGN( x, align );
+    // (((x)+((align)-1)) & ~((align)-1));
+    // & ~((align)-1)) 相当于 整除以32
+    // (x)+((align)-1) 相当于加上32-1
+    // 整体就是加上 32 - 1 后，再整除以 32
+    // 也就是要 让数字 x 以 32 对齐，不足 32 的部分补齐
+    // ！！！ 所以 就学习到了 整除的用法 & ~((align)-1))
     if( !(x&(disalign-1)) )
         x += align;
     return x;
@@ -85,9 +91,14 @@ static x264_frame_t *frame_new( x264_t *h, int b_fdec )
     i_width  = h->mb.i_mb_width*16;
     i_lines  = h->mb.i_mb_height*16;
     i_stride = align_stride( i_width + PADH2, align, disalign );
+    // PADH2 是要填充的像素
+    // 填充之后 要以 align 对齐
 
     if( i_csp == X264_CSP_NV12 || i_csp == X264_CSP_NV16 )
     {
+        // X264_CSP_NV12 是 420 
+        // X264_CSP_NV16 是 422
+        // 这两种像素采样格式都可以 用两个平面就存储下来
         luma_plane_count = 1;
         frame->i_plane = 2;
         for( int i = 0; i < 2; i++ )
@@ -120,13 +131,17 @@ static x264_frame_t *frame_new( x264_t *h, int b_fdec )
         goto fail;
 
     frame->i_csp = i_csp;
-    frame->i_width_lowres = frame->i_width[0]/2;
-    frame->i_lines_lowres = frame->i_lines[0]/2;
+    frame->i_width_lowres = frame->i_width[0]/2;    // lowres -> low res ：低分辨率
+    frame->i_lines_lowres = frame->i_lines[0]/2;    // 这个值的意思应该是：降采样之后，送到lookahead去分析
     frame->i_stride_lowres = align_stride( frame->i_width_lowres + PADH2, align, disalign<<1 );
+    // 降采样之后也要进行 对齐
 
     for( int i = 0; i < h->param.i_bframe + 2; i++ )
         for( int j = 0; j < h->param.i_bframe + 2; j++ )
             PREALLOC( frame->i_row_satds[i][j], i_lines/16 * sizeof(int) );
+    // frame->i_row_satds
+    // 这个就是 lookahead 算出来，低像素精度的运动补偿误差
+    // 用来码率控制(估计模糊复杂度)，以及确定帧类型
 
     frame->i_poc = -1;
     frame->i_type = X264_TYPE_AUTO;
@@ -135,7 +150,7 @@ static x264_frame_t *frame_new( x264_t *h, int b_fdec )
     frame->i_frame = -1;
     frame->i_frame_num = -1;
     frame->i_lines_completed = -1;
-    frame->b_fdec = b_fdec;
+    frame->b_fdec = b_fdec;     // 标记这一帧是编码帧还是重建帧？
     frame->i_pic_struct = PIC_STRUCT_AUTO;
     frame->i_field_cnt = -1;
     frame->i_duration =
@@ -149,6 +164,9 @@ static x264_frame_t *frame_new( x264_t *h, int b_fdec )
 
     if( i_csp == X264_CSP_NV12 || i_csp == X264_CSP_NV16 )
     {
+        // 这里 frame->i_stride[1] 就是列填充后的宽度了
+        // 然后这里还要填充行
+        // 上面填 chroma_padv 行，下面填 chroma_padv 行
         int chroma_padv = i_padv >> (i_csp == X264_CSP_NV12);
         int chroma_plane_size = (frame->i_stride[1] * (frame->i_lines[1] + 2*chroma_padv));
         PREALLOC( frame->buffer[1], chroma_plane_size * SIZEOF_PIXEL );
@@ -164,6 +182,9 @@ static x264_frame_t *frame_new( x264_t *h, int b_fdec )
         int64_t luma_plane_size = align_plane_size( frame->i_stride[p] * (frame->i_lines[p] + 2*i_padv), disalign );
         if( h->param.analyse.i_subpel_refine && b_fdec )
             luma_plane_size *= 4;
+        // 因为 i_subpel_refine == 1 意味着要做精细的搜索
+        // 所以这里开了 4 个 Y 平面
+        // question? 这里我确实没搞懂，为什么要开4个？
 
         /* FIXME: Don't allocate both buffers in non-adaptive MBAFF. */
         PREALLOC( frame->buffer[p], luma_plane_size * SIZEOF_PIXEL );
@@ -214,10 +235,13 @@ static x264_frame_t *frame_new( x264_t *h, int b_fdec )
                     PREALLOC( frame->lowres_mvs[j][i], 2*h->mb.i_mb_count*sizeof(int16_t) );
                     PREALLOC( frame->lowres_mv_costs[j][i], h->mb.i_mb_count*sizeof(int) );
                 }
+                // 给低分辨率分配 MV 和 cost
             PREALLOC( frame->i_propagate_cost, i_mb_count * sizeof(uint16_t) );
+                // 给 mbtree 分配空间
             for( int j = 0; j <= h->param.i_bframe+1; j++ )
                 for( int i = 0; i <= h->param.i_bframe+1; i++ )
                     PREALLOC( frame->lowres_costs[j][i], i_mb_count * sizeof(uint16_t) );
+                // 低分辨率的 costs
 
             /* mbtree asm can overread the input buffers, make sure we don't read outside of allocated memory. */
             prealloc_size += NATIVE_ALIGN;
@@ -660,6 +684,8 @@ void x264_frame_expand_border_mod16( x264_t *h, x264_frame_t *frame )
                 memcpy( &frame->plane[i][y*frame->i_stride[i]],
                         &frame->plane[i][(i_height-(~y&PARAM_INTERLACED)-1)*frame->i_stride[i]],
                         (i_width + i_padx) * SIZEOF_PIXEL );
+            // 行不满足 16 的倍数
+            // 就把最后一行一直向下复制 直到变成 16 的倍数行
         }
     }
 }
@@ -788,9 +814,9 @@ x264_frame_t *x264_frame_pop_unused( x264_t *h, int b_fdec )
     frame->b_last_minigop_bframe = 0;
     frame->i_reference_count = 1;
     frame->b_intra_calculated = 0;
-    frame->b_scenecut = 1;
+    frame->b_scenecut = 1;  //设置为 1，只是说这一帧可以进行屏幕切换检测，并不是他就是屏幕切换
     frame->b_keyframe = 0;
-    frame->b_corrupt = 0;
+    frame->b_corrupt = 0;   // 当前帧是否可用，首先标记为不可用
     frame->i_slice_count = h->param.b_sliced_threads ? h->param.i_threads : 1;
 
     memset( frame->weight, 0, sizeof(frame->weight) );

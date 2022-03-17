@@ -165,9 +165,9 @@ struct x264_ratecontrol_t
     int bframes;                /* # consecutive B-frames before this P-frame */
     int bframe_bits;            /* total cost of those frames */
 
-    int i_zones;
-    x264_zone_t *zones;
-    x264_zone_t *prev_zone;
+    int i_zones;                // ratecontrol 的另一方法
+    x264_zone_t *zones;         // 也是 二次编码 的一种
+    x264_zone_t *prev_zone;     // 需要在外部编辑好一些文件
 
     /* hrd stuff */
     int initial_cpb_removal_delay;

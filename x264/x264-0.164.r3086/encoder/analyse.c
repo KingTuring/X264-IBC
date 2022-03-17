@@ -25,6 +25,9 @@
  * For more information, contact us at licensing@x264.com.
  *****************************************************************************/
 
+// avc2code - Header
+#include<avc2code.h>
+
 #include "common/common.h"
 #include "macroblock.h"
 #include "me.h"
@@ -1265,8 +1268,11 @@ static void mb_analyse_inter_p16x16( x264_t *h, x264_mb_analysis_t *a )
     LOAD_FENC( &m, h->mb.pic.p_fenc, 0, 0 );
 
     a->l0.me16x16.cost = INT_MAX;
+    // h->mb.pic.i_fref[0]
+    // list0 参考帧数量
     for( int i_ref = 0; i_ref < h->mb.pic.i_fref[0]; i_ref++ )
     {
+        //printf("h->mb.pic.i_fref[0] %d", h->mb.pic.i_fref[0]);
         m.i_ref_cost = REF_COST( 0, i_ref );
         i_halfpel_thresh -= m.i_ref_cost;
 
@@ -2922,6 +2928,7 @@ void x264_macroblock_analyse( x264_t *h )
 
     // 码率控制模块，获取本宏块的QP
     h->mb.i_qp = x264_ratecontrol_mb_qp( h );
+    //printf("%d", h->mb.i_qp);
 
     /* If the QP of this MB is within 1 of the previous MB, code the same QP as the previous MB,
      * to lower the bit cost of the qp_delta.  Don't do this if QPRD is enabled. */
@@ -2935,7 +2942,12 @@ void x264_macroblock_analyse( x264_t *h )
     mb_analyse_init( h, &analysis, h->mb.i_qp );
 
     /*--------------------------- Do the analysis ---------------------------*/
-    if( h->sh.i_type == SLICE_TYPE_I )
+#if Avc2CodeValid
+    // avc2code - ReferenceFramesListFixed - version2
+    if (h->i_nal_ref_idc == NAL_PRIORITY_HIGHEST || h->sh.i_type == SLICE_TYPE_I)
+#else
+    if (h->sh.i_type == SLICE_TYPE_I)
+#endif // Avc2CodeValid
     {
 intra_analysis:
         if( analysis.i_mbrd )
@@ -3103,8 +3115,15 @@ skip_analysis:
 
             /* Now do 16x8/8x16 */
             int i_thresh16x8 = analysis.l0.me8x8[1].cost_mv + analysis.l0.me8x8[2].cost_mv;
-            if( ( flags & X264_ANALYSE_PSUB16x16 ) && (!analysis.b_early_terminate ||
+
+#if Avc2CodeValid
+            // avc2code - ReferenceFramesListFixed - version1
+            if (h->i_nal_ref_idc != NAL_PRIORITY_HIGHEST && (flags & X264_ANALYSE_PSUB16x16) && (!analysis.b_early_terminate ||
                 analysis.l0.i_cost8x8 < analysis.l0.me16x16.cost + i_thresh16x8) )
+#else
+            if ((flags & X264_ANALYSE_PSUB16x16) && (!analysis.b_early_terminate ||
+                analysis.l0.i_cost8x8 < analysis.l0.me16x16.cost + i_thresh16x8))
+#endif // Avc2CodeValid
             {
                 int i_avg_mv_ref_cost = (analysis.l0.me8x8[2].cost_mv + analysis.l0.me8x8[2].i_ref_cost
                                       + analysis.l0.me8x8[3].cost_mv + analysis.l0.me8x8[3].i_ref_cost + 1) >> 1;
@@ -3235,8 +3254,13 @@ skip_analysis:
             COPY2_IF_LT( i_cost, analysis.i_satd_pcm, i_type, I_PCM );
 
             h->mb.i_type = i_type;
-
-            if( analysis.b_force_intra && !IS_INTRA(i_type) )
+            
+#if Avc2CodeValid
+            // avc2code - ReferenceFramesListFixed - version1
+            if (h->i_nal_ref_idc == NAL_PRIORITY_HIGHEST || (analysis.b_force_intra && !IS_INTRA(i_type)))
+#else
+            if ((analysis.b_force_intra && !IS_INTRA(i_type)))
+#endif
             {
                 /* Intra masking: copy fdec to fenc and re-encode the block as intra in order to make it appear as if
                  * it was an inter block. */

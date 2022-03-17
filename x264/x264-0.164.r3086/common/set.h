@@ -54,6 +54,15 @@ typedef struct
     int b_constraint_set2;
     int b_constraint_set3;
 
+#if Avc2CodeValid
+    // avc2code - SpsFixed
+    int b_scc_extension;
+    int b_scc_IBC;
+    int b_scc_PLT;
+    int b_scc_ACT;
+    int b_scc_AMVR;
+#endif // Avc2CodeValid
+
     int i_log2_max_frame_num;
 
     int i_poc_type;

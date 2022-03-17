@@ -25,6 +25,9 @@
  * For more information, contact us at licensing@x264.com.
  *****************************************************************************/
 
+// avc2code - Header
+#include<avc2code.h>
+
 #ifndef X264_X264_H
 #define X264_X264_H
 
@@ -274,6 +277,10 @@ static const char * const x264_avcintra_flavor_names[] = { "panasonic", "sony", 
 #define IS_X264_TYPE_B(x) ((x)==X264_TYPE_B || (x)==X264_TYPE_BREF)
 
 /* Log level */
+#if Avc2CodeValid
+// Avc2Code - log
+#define X264_LOG_AVC2          (-2)
+#endif // Avc2CodeValid
 #define X264_LOG_NONE          (-1)
 #define X264_LOG_ERROR          0
 #define X264_LOG_WARNING        1
@@ -408,6 +415,13 @@ typedef struct x264_param_t
         int          i_mv_range; /* maximum length of a mv (in pixels). -1 = auto, based on level */
         int          i_mv_range_thread; /* minimum space between threads. -1 = auto, based on number of threads. */
         int          i_subpel_refine; /* subpixel motion estimation quality */
+        /*    1：用全像素块进行动态搜索，对每个块再用快速模式进行四分之一像素块精确搜索
+            2：用半像素块进行动态搜索，对每个块再用快速模式进行四分之一像素块精确搜索
+            3：用半像素块进行动态搜索，对每个块再用质量模式进行四分之一像素块精确搜索
+            4：用快速模式进行四分之一像素块精确搜索
+            5：用质量模式进行四分之一像素块精确搜索
+            6：进行I、P帧像素块的速率失真最优化(rdo)
+            7：进行I、P帧运动矢量及块内部的速率失真最优化(质量最好)*/
         int          b_chroma_me; /* chroma ME for subpel and mode decision in P-frames */
         int          b_mixed_references; /* allow each mb partition to have its own reference number */
         int          i_trellis;  /* trellis RD quantization */
@@ -611,6 +625,15 @@ typedef struct x264_param_t
 
     /* For internal use only */
     void *opaque;
+
+#if Avc2CodeValid
+    // Avc2Code - opt
+    int b_IBC;
+    int b_PLT;
+    int b_ACT;
+    int b_AMVR;
+#endif // Avc2CodeValid
+
 } x264_param_t;
 
 X264_API void x264_nal_encode( x264_t *h, uint8_t *dst, x264_nal_t *nal );

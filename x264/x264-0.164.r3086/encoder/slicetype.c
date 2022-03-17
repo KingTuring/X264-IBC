@@ -1979,7 +1979,11 @@ int x264_rc_analyse_slice( x264_t *h )
     int cost;
     x264_emms();
 
-    if( IS_X264_TYPE_I(h->fenc->i_type) )
+    // avc2code - ReferenceFramesListFixed
+    if (h->fenc->i_type == X264_TYPE_P && h->i_nal_ref_idc == NAL_PRIORITY_HIGHEST) {
+        p1 = b = 0;
+    }
+    else if( IS_X264_TYPE_I(h->fenc->i_type) )
         p1 = b = 0;
     else if( h->fenc->i_type == X264_TYPE_P )
         p1 = b = h->fenc->i_bframes + 1;

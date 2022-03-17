@@ -24,6 +24,9 @@
  * For more information, contact us at licensing@x264.com.
  *****************************************************************************/
 
+// avc2code - Header
+#include<avc2code.h>
+
 #include "base.h"
 
 #include <ctype.h>
@@ -340,7 +343,15 @@ REALIGN_STACK void x264_picture_clean( x264_picture_t *pic )
  * x264_param_default:
  ****************************************************************************/
 REALIGN_STACK void x264_param_default( x264_param_t *param )
-{
+{   
+#if Avc2CodeValid
+    // Avc2Code - opt
+    param->b_IBC = 0;
+    param->b_PLT = 0;
+    param->b_ACT = 0;
+    param->b_AMVR = 0;
+#endif // Avc2CodeValid
+
     /* */
     memset( param, 0, sizeof( x264_param_t ) );
 
@@ -379,27 +390,27 @@ REALIGN_STACK void x264_param_default( x264_param_t *param )
 #endif
 
     /* Encoder parameters */
-    param->i_frame_reference = 3;
-    param->i_keyint_max = 250;
+    param->i_frame_reference = 3;                   // 默认 最大参考帧数量 3
+    param->i_keyint_max = 250;                      // 默认 最大 IDR 帧间隔 250
     param->i_keyint_min = X264_KEYINT_MIN_AUTO;
-    param->i_bframe = 3;
-    param->i_scenecut_threshold = 40;
+    param->i_bframe = 3;                            // 默认 两个参考帧中间的B帧数量 3
+    param->i_scenecut_threshold = 40;               // 默认 场景切换的阈值 40
     param->i_bframe_adaptive = X264_B_ADAPT_FAST;
     param->i_bframe_bias = 0;
     param->i_bframe_pyramid = X264_B_PYRAMID_NORMAL;
     param->b_interlaced = 0;
     param->b_constrained_intra = 0;
 
-    param->b_deblocking_filter = 1;
+    param->b_deblocking_filter = 1;                  // 默认 deblocking 开启
     param->i_deblocking_filter_alphac0 = 0;
     param->i_deblocking_filter_beta = 0;
 
-    param->b_cabac = 1;
+    param->b_cabac = 1;                              // 默认 cabac 开启
     param->i_cabac_init_idc = 0;
 
-    param->rc.i_rc_method = X264_RC_CRF;
+    param->rc.i_rc_method = X264_RC_CRF;             // 默认 rc 方法 CRF
     param->rc.i_bitrate = 0;
-    param->rc.f_rate_tolerance = 1.0;
+    param->rc.f_rate_tolerance = 1.0;                // 默认 码率控制的时间忍耐度 1.0
     param->rc.i_vbv_max_bitrate = 0;
     param->rc.i_vbv_buffer_size = 0;
     param->rc.f_vbv_buffer_init = 0.9;
@@ -407,54 +418,54 @@ REALIGN_STACK void x264_param_default( x264_param_t *param )
     param->rc.f_rf_constant = 23;
     param->rc.i_qp_min = 0;
     param->rc.i_qp_max = INT_MAX;
-    param->rc.i_qp_step = 4;
-    param->rc.f_ip_factor = 1.4;
-    param->rc.f_pb_factor = 1.3;
-    param->rc.i_aq_mode = X264_AQ_VARIANCE;
-    param->rc.f_aq_strength = 1.0;
-    param->rc.i_lookahead = 40;
+    param->rc.i_qp_step = 4;                         // 默认 两帧之间的最大QP变化 4
+    param->rc.f_ip_factor = 1.4;                     // 默认 ip帧之间的QP比值
+    param->rc.f_pb_factor = 1.3;                     // 默认 pb帧之间的QP比值
+    param->rc.i_aq_mode = X264_AQ_VARIANCE;          // 默认 AQ方法 X264_AQ_VARIANCE
+    param->rc.f_aq_strength = 1.0;                   // 默认 AQ强度
+    param->rc.i_lookahead = 40;                      // 默认 lookahead 长度
 
-    param->rc.b_stat_write = 0;
-    param->rc.psz_stat_out = "x264_2pass.log";
-    param->rc.b_stat_read = 0;
-    param->rc.psz_stat_in = "x264_2pass.log";
-    param->rc.f_qcompress = 0.6;
-    param->rc.f_qblur = 0.5;
-    param->rc.f_complexity_blur = 20;
+    param->rc.b_stat_write = 0;                      // 如果允许二次编码
+    param->rc.psz_stat_out = "x264_2pass.log";       // 则第一次编码后的信息存在 x264_2pass.log 里
+    param->rc.b_stat_read = 0;                       // 第二次的时候，直接从 log 文件中读出来 加速第二次编码
+    param->rc.psz_stat_in = "x264_2pass.log";        // 是 x265 reuse-level 的简单版本
+    param->rc.f_qcompress = 0.6;                     // 默认 视觉因子 0.6
+    param->rc.f_qblur = 0.5;                         // 模糊复杂度参数
+    param->rc.f_complexity_blur = 20;                // 模糊复杂度参数 
     param->rc.i_zones = 0;
-    param->rc.b_mb_tree = 1;
+    param->rc.b_mb_tree = 1;                         // 默认 mbtree 开启
 
     /* Log */
-    param->pf_log = x264_log_default;
-    param->p_log_private = NULL;
-    param->i_log_level = X264_LOG_INFO;
+    param->pf_log = x264_log_default;                // 默认 信息打印函数
+    param->p_log_private = NULL;                     // 所以这里可以看到，x265的 param 里面，有函数指针，指向打印函数
+    param->i_log_level = X264_LOG_INFO;              // 默认 打印等级 X264_LOG_INFO
 
     /* */
-    param->analyse.intra = X264_ANALYSE_I4x4 | X264_ANALYSE_I8x8;
-    param->analyse.inter = X264_ANALYSE_I4x4 | X264_ANALYSE_I8x8
+    param->analyse.intra = X264_ANALYSE_I4x4 | X264_ANALYSE_I8x8;           // 默认 帧内分析模式，也就是说，可以在这里设置，只进行8*8
+    param->analyse.inter = X264_ANALYSE_I4x4 | X264_ANALYSE_I8x8            // 默认 帧间分析模式
                          | X264_ANALYSE_PSUB16x16 | X264_ANALYSE_BSUB16x16;
-    param->analyse.i_direct_mv_pred = X264_DIRECT_PRED_SPATIAL;
-    param->analyse.i_me_method = X264_ME_HEX;
+    param->analyse.i_direct_mv_pred = X264_DIRECT_PRED_SPATIAL;             // 默认 选择 mvp 的方式： 空域
+    param->analyse.i_me_method = X264_ME_HEX;               // 默认 运动搜索方式： 六边形
     param->analyse.f_psy_rd = 1.0;
     param->analyse.b_psy = 1;
     param->analyse.f_psy_trellis = 0;
-    param->analyse.i_me_range = 16;
-    param->analyse.i_subpel_refine = 7;
-    param->analyse.b_mixed_references = 1;
-    param->analyse.b_chroma_me = 1;
-    param->analyse.i_mv_range_thread = -1;
+    param->analyse.i_me_range = 16;                         // 默认 整数运动估计的范围
+    param->analyse.i_subpel_refine = 7;                     // 默认 半像素运动估计的质量
+    param->analyse.b_mixed_references = 1;                  // 是否允许每个宏块有自己的参考帧
+    param->analyse.b_chroma_me = 1;                         // 默认 是否进行色度运动补偿：是
+    param->analyse.i_mv_range_thread = -1;                  
     param->analyse.i_mv_range = -1; // set from level_idc
     param->analyse.i_chroma_qp_offset = 0;
-    param->analyse.b_fast_pskip = 1;
+    param->analyse.b_fast_pskip = 1;                        // 是否进行 快速 pskip判断
     param->analyse.b_weighted_bipred = 1;
-    param->analyse.i_weighted_pred = X264_WEIGHTP_SMART;
+    param->analyse.i_weighted_pred = X264_WEIGHTP_SMART;    // P 帧加权预测方式
     param->analyse.b_dct_decimate = 1;
-    param->analyse.b_transform_8x8 = 1;
-    param->analyse.i_trellis = 1;
-    param->analyse.i_luma_deadzone[0] = 21;
+    param->analyse.b_transform_8x8 = 1;                     // 是否进行 8*8 的变换  question？ 默认的只有4*4？
+    param->analyse.i_trellis = 1;                           // trellis RD
+    param->analyse.i_luma_deadzone[0] = 21;             
     param->analyse.i_luma_deadzone[1] = 11;
-    param->analyse.b_psnr = 0;
-    param->analyse.b_ssim = 0;
+    param->analyse.b_psnr = 0;                              // 是否计算 psnr
+    param->analyse.b_ssim = 0;                              // 是否计算 ssim
 
     param->i_cqm_preset = X264_CQM_FLAT;
     memset( param->cqm_4iy, 16, sizeof( param->cqm_4iy ) );
@@ -466,10 +477,12 @@ REALIGN_STACK void x264_param_default( x264_param_t *param )
     memset( param->cqm_8ic, 16, sizeof( param->cqm_8ic ) );
     memset( param->cqm_8pc, 16, sizeof( param->cqm_8pc ) );
 
-    param->b_repeat_headers = 1;
-    param->b_annexb = 1;
+    param->b_repeat_headers = 1;                            // 是否在每一帧前都编码 PPS 和 SPS
+    param->b_annexb = 1;                                    // 如果设置为1，在每个NALU前加四个字节的起始码，不然的话，加NALU的大小在每个NALU前面
+                                                            // question? 看一下 annexb 的具体内容
     param->b_aud = 0;
-    param->b_vfr_input = 1;
+    param->b_vfr_input = 1;                                 // 输入是否是变帧率，如果是的话。就使用 timebase and timestamps 来进行率控
+                                                            // 不然的话，使用 fps 来进行率控
     param->i_nal_hrd = X264_NAL_HRD_NONE;
     param->b_tff = 1;
     param->b_pic_struct = 0;
@@ -678,6 +691,13 @@ static int param_apply_tune( x264_param_t *param, const char *tune )
             param->b_sliced_threads = 1;
             param->b_vfr_input = 0;
             param->rc.b_mb_tree = 0;
+
+#if Avc2CodeValid
+            // avc2code - CommandLineSet
+            //if (psy_tuning_used++) goto psy_failure;
+            //param->rc.i_aq_mode = X264_AQ_NONE;
+            //param->analyse.b_psy = 0;
+#endif // Avc2CodeValid
         }
         else if( len == 6 && !strncasecmp( tune, "touhou", 6 ) )
         {

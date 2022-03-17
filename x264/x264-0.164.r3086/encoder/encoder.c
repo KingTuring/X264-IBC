@@ -25,6 +25,9 @@
  * For more information, contact us at licensing@x264.com.
  *****************************************************************************/
 
+// avc2code - Header
+#include<avc2code.h>
+
 #include "common/common.h"
 
 #include "set.h"
@@ -174,6 +177,8 @@ static void slice_header_init( x264_t *h, x264_slice_header_t *sh,
     sh->i_num_ref_idx_l0_active = 1;
     sh->i_num_ref_idx_l1_active = 1;
 
+    // 参考帧列表是否重排了
+    // 要写入码流
     sh->b_ref_pic_list_reordering[0] = h->b_ref_reorder[0];
     sh->b_ref_pic_list_reordering[1] = h->b_ref_reorder[1];
 
@@ -1611,7 +1616,7 @@ x264_t *x264_encoder_open( x264_param_t *param, void *api )
     h->frames.i_delay += h->param.i_sync_lookahead;
     h->frames.i_delay += h->param.b_vfr_input;
     h->frames.i_bframe_delay = h->param.i_bframe ? (h->param.i_bframe_pyramid ? 2 : 1) : 0;
-
+    
     h->frames.i_max_ref0 = h->param.i_frame_reference;
     h->frames.i_max_ref1 = X264_MIN( h->sps->vui.i_num_reorder_frames, h->param.i_frame_reference );
     h->frames.i_max_dpb  = h->sps->vui.i_max_dec_frame_buffering;
@@ -2143,11 +2148,19 @@ static inline void reference_check_reorder( x264_t *h )
         if( h->frames.reference[i]->b_corrupt )
         {
             h->b_ref_reorder[0] = 1;
+            // 如果总参考帧列表中有 损坏帧
+            // 那一定进行了参考帧重排
             return;
         }
     for( int list = 0; list <= (h->sh.i_type == SLICE_TYPE_B); list++ )
         for( int i = 0; i < h->i_ref[list] - 1; i++ )
         {
+            // 经典来了
+            // 264在参考帧的索引上
+            // 对于 P 帧是根据 frame_num 
+            // 而对于 B 帧
+            // 是根据 POC
+            // 在这里就体现了出来
             int framenum_diff = h->fref[list][i+1]->i_frame_num - h->fref[list][i]->i_frame_num;
             int poc_diff = h->fref[list][i+1]->i_poc - h->fref[list][i]->i_poc;
             /* P and B-frames use different default orders. */
@@ -2299,11 +2312,23 @@ static inline void reference_build_list( x264_t *h, int i_poc )
     /* build ref list 0/1 */
     h->mb.pic.i_fref[0] = h->i_ref[0] = 0;
     h->mb.pic.i_fref[1] = h->i_ref[1] = 0;
+    // h->i_ref 参考帧个数
     if( h->sh.i_type == SLICE_TYPE_I )
         return;
 
+    /*printf("\n%I64x\n", (unsigned long long int)(void*)h->frames.reference);
+    x264_frame_t** test = (void*)((unsigned long long int)h->frames.reference - 0);
+    printf("\n%I64x\n", (unsigned long long int)(void*)h->fref[0]);
+    x264_frame_t** fref = (void*)((unsigned long long int)h->fref[0] - 0);*/
     for( int i = 0; h->frames.reference[i]; i++ )
     {
+        // 遍历 h->frames.reference
+        // b_corrupt 标记是否可用，不可用的跳过
+        // 可用的话，
+        // 如果 poc 小于待编码帧 POC 放入 list0
+        // 如果 poc 大于待编码帧 POC 放入 list1
+        /*x264_frame_t* test1 = (void*)((unsigned long long int)test[i]);
+        printf("\n%I64x\n", (unsigned long long int)(void*)test[i]);*/
         if( h->frames.reference[i]->b_corrupt )
             continue;
         if( h->frames.reference[i]->i_poc < i_poc )
@@ -2341,16 +2366,22 @@ static inline void reference_build_list( x264_t *h, int i_poc )
     for( int list = 0; list < 2; list++ )
     {
         h->fref_nearest[list] = h->fref[list][0];
+        // h->fref_nearest[list] 
+        // 存每个 list0 和 list1 的距离重排版本
         do
         {
             b_ok = 1;
             for( int i = 0; i < h->i_ref[list] - 1; i++ )
             {
+                // 卧槽
+                // ?: 还可以这么用
+                // 就是两个列表的距离优先重排版本
                 if( list ? h->fref[list][i+1]->i_poc < h->fref_nearest[list]->i_poc
                          : h->fref[list][i+1]->i_poc > h->fref_nearest[list]->i_poc )
                     h->fref_nearest[list] = h->fref[list][i+1];
                 if( reference_distance( h, h->fref[list][i] ) > reference_distance( h, h->fref[list][i+1] ) )
                 {
+                    // swap 的宏
                     XCHG( x264_frame_t*, h->fref[list][i], h->fref[list][i+1] );
                     b_ok = 0;
                     break;
@@ -2408,6 +2439,8 @@ static inline void reference_build_list( x264_t *h, int i_poc )
     assert( h->i_ref[0] + h->i_ref[1] <= X264_REF_MAX );
     h->mb.pic.i_fref[0] = h->i_ref[0];
     h->mb.pic.i_fref[1] = h->i_ref[1];
+    // 这里很重要
+    // 这里将 fenc 的 参考列表 写进了 宏块的分析模块
 }
 
 static void fdec_filter_row( x264_t *h, int mb_y, int pass )
@@ -2891,6 +2924,8 @@ reencode:
                 }
                 x264_macroblock_write_cavlc( h );
                 /* If there was a CAVLC level code overflow, try again at a higher QP. */
+                // 只有当 overflow 的时候，才会重新编码
+                // 重新编码的时候，需要设置的参数在下面
                 if( h->mb.b_overflow )
                 {
                     h->mb.i_chroma_qp = h->chroma_qp_table[++h->mb.i_qp];
@@ -3296,6 +3331,7 @@ int x264_encoder_invalidate_reference( x264_t *h, int64_t pts )
         return -1;
     }
     h = h->thread[h->i_thread_phase];
+    // 标记 缓存帧列表中的帧是否可用
     if( pts >= h->i_last_idr_pts )
     {
         for( int i = 0; h->frames.reference[i]; i++ )
@@ -3366,9 +3402,15 @@ int     x264_encoder_encode( x264_t *h,
 
         /* 1: Copy the picture to a frame and move it to a buffer */
         x264_frame_t *fenc = x264_frame_pop_unused( h, 0 );
+        // 编码在用的结构体是 fenc
         if( !fenc )
             return -1;
-
+        
+        // x264_frame_pop_unused 拿到的 x264_frame_t 只是开辟好了空间
+        // 包括 lookahead 需要用的
+        // analysis 需要用的
+        // ratecontrol 需要用的东西
+        // 真正的原始平面数据 在 x264_frame_copy_picture 这一步被拷贝到了 fenc 中
         if( x264_frame_copy_picture( h, fenc, pic_in ) < 0 )
             return -1;
 
@@ -3415,6 +3457,11 @@ int     x264_encoder_encode( x264_t *h,
         }
         else
             x264_adaptive_quant_frame( h, fenc, pic_in->prop.quant_offsets );
+            // VAQ 的算法实现是在这里进行的
+            // 结果存在了
+            // frame->f_qp_offset
+            // frame->f_qp_offset_aq
+            // frame->i_inv_qscale_factor
 
         if( pic_in->prop.quant_offsets_free )
             pic_in->prop.quant_offsets_free( pic_in->prop.quant_offsets );
@@ -3424,11 +3471,16 @@ int     x264_encoder_encode( x264_t *h,
 
         /* 2: Place the frame into the queue for its slice type decision */
         x264_lookahead_put_frame( h, fenc );
+        // 把 fenc 放进 h->lookahead->next 里面
+        //等待 lookahead 模块处理
 
         if( h->frames.i_input <= h->frames.i_delay + 1 - h->i_thread_frames )
         {
             /* Nothing yet to encode, waiting for filling of buffers */
             pic_out->i_type = X264_TYPE_AUTO;
+            // 第 1 次 return
+            // 是因为有延迟处理，把当前帧放入 h->lookahead->next 之后
+            // 没有进行任何操作就返回了
             return 0;
         }
     }
@@ -3445,13 +3497,20 @@ int     x264_encoder_encode( x264_t *h,
     /* 3: The picture is analyzed in the lookahead */
     if( !h->frames.current[0] )
         x264_lookahead_get_frames( h );
+    // h->frames.current 是当前要编码的帧
+    // lookahead 处理完了是要送到 current 进行编码的
+    // 如果是空的，那么需要去 lookahead 里面拿一帧出来
 
     if( !h->frames.current[0] && x264_lookahead_is_empty( h ) )
         return encoder_frame_end( thread_oldest, thread_current, pp_nal, pi_nal, pic_out );
+        // 第 2 次 return
+        // 是因为从 h->lookahead->next 中取不出来帧了
+        // 同时 lookahead 也空了，那说明，这次是真的编完了
 
     /* ------------------- Get frame to be encoded ------------------------- */
     /* 4: get picture to encode */
     h->fenc = x264_frame_shift( h->frames.current );
+    // 从 h->frames.current 中拿出来一帧 进行编码
 
     /* If applicable, wait for previous frame reconstruction to finish */
     if( h->param.b_sliced_threads )
@@ -3478,16 +3537,25 @@ int     x264_encoder_encode( x264_t *h,
     x264_ratecontrol_zone_init( h );
 
     // ok to call this before encoding any frames, since the initial values of fdec have b_kept_as_ref=0
+    // question? 待处理
+    // 这个函数按道理应该是处理参考帧列表的
+    // 但是每次进去都发现，f->dec还没分配内存
     if( reference_update( h ) )
         return -1;
     h->fdec->i_lines_completed = -1;
 
+    // 虽然当前帧不是 IDR 帧
+    // 但是，如果当前参考帧列表中没有可以参考的帧了
+    // 那么这里也将这一帧的类型更改为 IDR 帧
     if( !IS_X264_TYPE_I( h->fenc->i_type ) )
     {
         int valid_refs_left = 0;
+        // 这种遍历方式不错
+        // 向后取帧，直到取出一个 NULL 停止
         for( int i = 0; h->frames.reference[i]; i++ )
             if( !h->frames.reference[i]->b_corrupt )
                 valid_refs_left++;
+            // 也就是说 h->frames.reference[i]->b_corrupt 是用来判断这一帧是否可用来作为参考帧
         /* No valid reference frames left: force an IDR. */
         if( !valid_refs_left )
         {
@@ -3496,6 +3564,9 @@ int     x264_encoder_encode( x264_t *h,
         }
     }
 
+    // b_keyframe
+    // IDR 帧 和 非IDR帧的 关键帧
+    // 这里应该是 lookahead 分析出来的
     if( h->fenc->b_keyframe )
     {
         h->frames.i_last_keyframe = h->fenc->i_frame;
@@ -3514,6 +3585,19 @@ int     x264_encoder_encode( x264_t *h,
 
     /* ------------------- Setup frame context ----------------------------- */
     /* 5: Init data dependent of frame type */
+#if Avc2CodeValid
+    // avc2code - ReferenceFramesListFixed
+    if (h->fenc->i_type == X264_TYPE_IDR && h->param.b_IBC == 1)
+    {
+        /* reset ref pictures */
+        i_nal_type = NAL_SLICE;
+        i_nal_ref_idc = NAL_PRIORITY_HIGHEST;
+        h->sh.i_type = SLICE_TYPE_P;
+        reference_reset(h);
+        h->frames.i_poc_last_open_gop = -1;
+    }
+    else
+#endif
     if( h->fenc->i_type == X264_TYPE_IDR )
     {
         /* reset ref pictures */
@@ -3558,6 +3642,10 @@ int     x264_encoder_encode( x264_t *h,
     h->fdec->i_frame = h->fenc->i_frame;
     h->fenc->b_kept_as_ref =
     h->fdec->b_kept_as_ref = i_nal_ref_idc != NAL_PRIORITY_DISPOSABLE && h->param.i_keyint_max > 1;
+    // 当优先级不是最低的，并且 IDR 帧间隔大于1
+    // 那么这帧就可以是参考帧
+    // 因为只要 不是 NAL_PRIORITY_DISPOSABLE 一定可能被参考
+    // 除了 全I帧
 
     h->fdec->mb_info = h->fenc->mb_info;
     h->fdec->mb_info_free = h->fenc->mb_info_free;
@@ -3580,6 +3668,15 @@ int     x264_encoder_encode( x264_t *h,
 
     /* ------------------- Init                ----------------------------- */
     /* build ref list 0/1 */
+    // h->reference 存了所有的重建帧
+    // 然后把这些重建帧分给 list0 和 list1
+#if Avc2CodeValid
+    // avc2code - ReferenceFramesListFixed
+    if (h->fenc->i_type == X264_TYPE_IDR && h->param.b_IBC == 1)
+    {
+        h->fdec->i_type = h->fenc->i_type = X264_TYPE_P;
+    }
+#endif // Avc2CodeValid
     reference_build_list( h, h->fdec->i_poc );
 
     /* ---------------------- Write the bitstream -------------------------- */
@@ -3598,6 +3695,8 @@ int     x264_encoder_encode( x264_t *h,
         h->out.i_nal = 0;
     }
 
+    // aud
+    // access unit delimiters
     if( h->param.b_aud )
     {
         int pic_type;
@@ -3620,9 +3719,10 @@ int     x264_encoder_encode( x264_t *h,
         overhead += h->out.nal[h->out.i_nal-1].i_payload + NALU_OVERHEAD;
     }
 
-    h->i_nal_type = i_nal_type;
-    h->i_nal_ref_idc = i_nal_ref_idc;
+    h->i_nal_type = i_nal_type;         // 帧类型
+    h->i_nal_ref_idc = i_nal_ref_idc;   // 参考等级
 
+    // 是否使用定期帧内刷新，而不是 IDR 帧刷新
     if( h->param.b_intra_refresh )
     {
         if( IS_X264_TYPE_I( h->fenc->i_type ) )
@@ -3659,6 +3759,9 @@ int     x264_encoder_encode( x264_t *h,
         }
     }
 
+    // 初始化的时候 b_keyframe == 0
+    // 如果重建帧序列为0， b_keyframe == 1
+    // 也有可能在 lookahead 的时候，对其进行了修改
     if( h->fenc->b_keyframe )
     {
         /* Write SPS and PPS */

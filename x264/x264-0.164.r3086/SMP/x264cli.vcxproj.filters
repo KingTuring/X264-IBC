@@ -69,6 +69,9 @@
     <ClInclude Include="..\filters\video\video.h">
       <Filter>Header Files\x264\filters\video</Filter>
     </ClInclude>
+    <ClInclude Include="avc2code.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\x264.c">

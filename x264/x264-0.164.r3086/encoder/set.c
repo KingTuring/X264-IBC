@@ -126,6 +126,15 @@ void x264_sps_init( x264_sps_t *sps, int i_id, x264_param_t *param )
     else
         sps->i_profile_idc  = PROFILE_BASELINE;
 
+#if Avc2CodeValid
+    // avc2code - SpsFixed
+    sps->b_scc_extension = (param->b_IBC || param->b_PLT || param->b_ACT || param->b_AMVR);
+    sps->b_scc_IBC = param->b_IBC;
+    sps->b_scc_PLT = param->b_PLT;
+    sps->b_scc_ACT = param->b_ACT;
+    sps->b_scc_AMVR = param->b_AMVR;
+#endif
+
     sps->b_constraint_set0  = sps->i_profile_idc == PROFILE_BASELINE;
     /* x264 doesn't support the features that are in Baseline and not in Main,
      * namely arbitrary_slice_order and slice_groups. */
@@ -316,6 +325,17 @@ void x264_sps_write( bs_t *s, x264_sps_t *sps )
     bs_write( s, 8, sps->i_level_idc );
 
     bs_write_ue( s, sps->i_id );
+
+#if Avc2CodeValid
+    // avc2code - SpsFixed
+    bs_write1(s, sps->b_scc_extension);
+    if (sps->b_scc_extension) {
+        bs_write1(s, sps->b_scc_IBC);
+        bs_write1(s, sps->b_scc_PLT);
+        bs_write1(s, sps->b_scc_ACT);
+        bs_write1(s, sps->b_scc_AMVR);
+    }
+#endif
 
     if( sps->i_profile_idc >= PROFILE_HIGH )
     {

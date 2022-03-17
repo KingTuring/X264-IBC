@@ -28,6 +28,9 @@
  * For more information, contact us at licensing@x264.com.
  *****************************************************************************/
 
+// avc2code - Header
+#include<avc2code.h>
+
 #ifdef _WIN32
 /* The following two defines must be located before the inclusion of any system header files. */
 #define WINVER       0x0500
@@ -88,6 +91,11 @@ void x264_cli_set_console_title( const char *title )
 static int get_argv_utf8( int *argc_ptr, char ***argv_ptr )
 {
     int ret = 0;
+    // LPWSTR WINAPI GetCommandLineW(VOID);
+    // GetCommandLineW 返回一个指针，指向一个地方，存储所有命令行参数
+    LPWSTR param = GetCommandLineW();
+    // SHSTDAPI_(LPWSTR *)  CommandLineToArgvW(_In_ LPCWSTR lpCmdLine, _Out_ int* pNumArgs);
+    // 返回 LPWSTR * 一个指针指向解析完命令行的地址
     wchar_t **argv_utf16 = CommandLineToArgvW( GetCommandLineW(), argc_ptr );
     if( argv_utf16 )
     {
@@ -97,6 +105,9 @@ static int get_argv_utf8( int *argc_ptr, char ***argv_ptr )
 
         for( int i = 0; i < argc; i++ )
             size += WideCharToMultiByte( CP_UTF8, 0, argv_utf16[i], -1, NULL, 0, NULL, NULL );
+            // WideCharToMultiByte 的目标地址是 NULL
+            // 也就是这里只是先看看 从 UTF-8 转换到 ANSI 需要多少 字节
+            // 确定好了size 开辟完空间之后，再进行填入字符
 
         char **argv = *argv_ptr = malloc( size );
         if( argv )
@@ -127,8 +138,8 @@ typedef struct {
     int i_seek;
     hnd_t hin;
     hnd_t hout;
-    FILE *qpfile;
-    FILE *tcfile_out;
+    FILE *qpfile;       // 这个和 HM 的配置文件，可以自己写一个 qp file，每一行写上帧的类型和强制的 QP 
+    FILE *tcfile_out;   // timecode format 变帧率的时候，要存下来每一帧的 timestamp_den 和 timestamp_num
     double timebase_convert_multiplier;
     int i_pulldown;
 } cli_opt_t;
@@ -270,6 +281,12 @@ void x264_cli_log( const char *name, int i_level, const char *fmt, ... )
     char *s_level;
     switch( i_level )
     {
+#if Avc2CodeValid
+        // Avc2Code - log
+        case X264_LOG_AVC2:
+            s_level = "avc2";
+            break;
+#endif
         case X264_LOG_ERROR:
             s_level = "error";
             break;
@@ -364,10 +381,14 @@ REALIGN_STACK int main( int argc, char **argv )
     cli_opt_t opt = {0};
     int ret = 0;
 
+    // FAIL_IF_ERROR 如果第一个参数满足，则 以 error 输出第二句话
+    // log-level 是 X264_LOG_ERROR
     FAIL_IF_ERROR( x264_threading_init(), "unable to initialize threading\n" );
 
 #ifdef _WIN32
     FAIL_IF_ERROR( !get_argv_utf8( &argc, &argv ), "unable to convert command line to UTF-8\n" );
+    // UTF-8 的指令，转换到ANSI
+    // 还是存到了 argv
 
     GetConsoleTitleW( org_console_title, CONSOLE_TITLE_SIZE );
     _setmode( _fileno( stdin ),  _O_BINARY );
@@ -387,6 +408,8 @@ REALIGN_STACK int main( int argc, char **argv )
 
     /* Control-C handler */
     signal( SIGINT, sigint_handler );
+    // 当发生了 SIGINT 时
+    // 执行 sigint_handler
 
     if( !ret )
         ret = encode( &param, &opt );
@@ -1009,8 +1032,41 @@ typedef enum
 } OptionsOPT;
 
 static char short_options[] = "8A:B:b:f:hI:i:m:o:p:q:r:t:Vvw";
+// short_options 对应的短选项有哪些
+// 可以发现在 long_options 中的第四个选项是对应的
+// 选项后面没有 : 表示不需要参数
+// 选项后面有一个:  表示跟一个参数，参数可以紧跟着选项，也可以间隔一个空格
+// 选项后面有两个:: 表示跟一个参数，必须间隔一个空格
+// 所以看到 短选项 8 后面没有 :
+// 对应的长选项就是 no_argument
+// 短选项 B 后面有:
+// 对应的长选项就是 required_argument
+//struct option
+//{
+//# if (defined __STDC__ && __STDC__) || defined __cplusplus
+//    const char* name;
+//# else
+//    char* name;
+//# endif
+//    /* has_arg can't be an enum because some compilers complain about
+//       type mismatches in all the code that assumes it is an int.  */
+//    int has_arg;
+//    int* flag;
+//    int val;
+//};
+// 也就是说：option结构体
+// 第一个成员是全名
+// 第二个成员是对参数的要求：是否需要
+// 第四个成员，是 get_opt 检测到该选项后，返回的值(用这个值来说明检测到了这个选项)
 static struct option long_options[] =
 {
+#if Avc2CodeValid
+    // Avc2Code - opt
+    { "IBC",                  no_argument,       NULL, 'N' },
+    { "PLT",                  no_argument,       NULL, 'n' },
+    { "ACT",                  no_argument,       NULL, 'X' },
+    { "AMVR",                  no_argument,       NULL, 'x' },
+#endif
     { "help",                 no_argument,       NULL, 'h' },
     { "longhelp",             no_argument,       NULL, OPT_LONGHELP },
     { "fullhelp",             no_argument,       NULL, OPT_FULLHELP },
@@ -1404,9 +1460,16 @@ static int parse( int argc, char **argv, x264_param_t *param, cli_opt_t *opt )
     char *tune = NULL;
 
     /* Presets are applied before all other options. */
+    // optind 是全局静态变量
+    // 标记目前解析到命令行的哪一个位置了
+    // 这是 for 循环第一次解析命令行
     for( optind = 0;; )
     {
         int c = getopt_long( argc, argv, short_options, long_options, NULL );
+        // 检测有没有设定 preset 和 tune
+        // optarg 是全局静态变量
+        // optarg 是每次命令行参数得到的值
+        // c 是解析到不同的命令行参数后，可以指定一个返回值，就是option结构体的第四个成员
         if( c == -1 )
             break;
         if( c == OPT_PRESET )
@@ -1417,13 +1480,17 @@ static int parse( int argc, char **argv, x264_param_t *param, cli_opt_t *opt )
             return -1;
     }
 
+    // 如果设置了 preset 并且 preset == placebo
     if( preset && !strcasecmp( preset, "placebo" ) )
         b_turbo = 0;
 
+    // 如果设置了 preset 或者 tune 就把他们对应的一组参数都设置进去
+    // 然后再开始设置命令行里的参数
     if( (preset || tune) && x264_param_default_preset( param, preset, tune ) < 0 )
         return -1;
 
     x264_param_default( &defaults );
+    // 这个 defaults 是用来打印 help信息的
     cli_log_level = defaults.i_log_level;
 
     memset( &input_opt, 0, sizeof(cli_input_opt_t) );
@@ -1434,6 +1501,8 @@ static int parse( int argc, char **argv, x264_param_t *param, cli_opt_t *opt )
     opt->b_progress = 1;
 
     /* Parse command line options */
+    // 第二次for循环
+    // 真正的解析命令行参数 并设置
     for( optind = 0;; )
     {
         int b_error = 0;
@@ -1448,6 +1517,21 @@ static int parse( int argc, char **argv, x264_param_t *param, cli_opt_t *opt )
 
         switch( c )
         {
+#if Avc2CodeValid
+            // Avc2Code - opt
+            case 'N':
+                param->b_IBC = 1;
+                break;
+            case 'n':
+                param->b_PLT = 1;
+                break;
+            case 'X':
+                param->b_ACT = 1;
+                break;
+            case 'x':
+                param->b_AMVR = 1;
+                break;
+#endif // Avc2CodeValid
             case 'h':
                 help( &defaults, 0 );
                 exit(0);
@@ -1607,6 +1691,11 @@ generic_option:
             return -1;
         }
     }
+
+#if Avc2CodeValid
+    // Avc2Code - ReferenceFramesCountFixed
+    if (param->b_IBC == 1) param->i_frame_reference += 1;
+#endif
 
     /* If first pass mode is used, apply faster settings. */
     if( b_turbo )
@@ -1976,6 +2065,9 @@ static int encode( x264_param_t *param, cli_opt_t *opt )
         x264_picture_init( &pic );
         convert_cli_to_lib_pic( &pic, &cli_pic );
 
+        // 当 b_vfr_input == 0
+        // 也就固定帧率的时候
+        // pic.i_pts = i_frame;
         if( !param->b_vfr_input )
             pic.i_pts = i_frame;
 

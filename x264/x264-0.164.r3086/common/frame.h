@@ -58,7 +58,11 @@ typedef struct x264_frame
     int64_t i_field_cnt; /* Presentation field count */
     int     i_frame_num; /* 7.4.3 frame_num */
     int     b_kept_as_ref;
-    int     i_pic_struct;
+    int     i_pic_struct;       // 图像结构：
+                                // 可以是连续扫描 progressive
+                                // 可以是 间隔扫描
+                                // 间隔扫描又有很多种方式
+                                // 包括：一个顶场一个底场，或者一个顶场多个底场等等
     int     b_keyframe;
     uint8_t b_fdec;
     uint8_t b_last_minigop_bframe; /* this frame is the last b in a sequence of bframes */
@@ -86,9 +90,9 @@ typedef struct x264_frame
 
     /* for unrestricted mv we allocate more data than needed
      * allocated data are stored in buffer */
-    pixel *buffer[4];
-    pixel *buffer_fld[4];
-    pixel *buffer_lowres;
+    pixel *buffer[4];       // 存放原像素的平面，分别进行了 边界像素补偿 和 字节对齐 以及 半像素空间补偿
+    pixel *buffer_fld[4];   // 用于 交叉扫描 的平面，不一定会用到
+    pixel *buffer_lowres;   // 用于 lookahead 分析的 低分辨率平面
 
     x264_weight_t weight[X264_REF_MAX][3]; /* [ref_index][plane] */
     pixel *weighted[X264_REF_MAX]; /* plane[0] weighted of the reference frames */

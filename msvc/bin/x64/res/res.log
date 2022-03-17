@@ -1,0 +1,47 @@
+实验目的：同时验证10帧和20帧的指令，目的是看编码两个GOP的时候，会不会出错
+
+1_ori_10：
+未做任何改变，编码10帧
+指令：
+--preset fast --bitrate 1024 --input-res 1280x720 --frames 10 --fps 60 --threads 1 -I 10 --ssim --tune zerolatency --psnr -o slideEditing.264 F:\HEVCseq\SlideEditing_1280x720_30\SlideEditing_1280x720_30.yuv
+
+2_ori_20：
+未做任何改变，编码20帧
+指令：
+--preset fast --bitrate 1024 --input-res 1280x720 --frames 20 --fps 60 --threads 1 -I 10 --ssim --tune zerolatency --psnr -o slideEditing.264 F:\HEVCseq\SlideEditing_1280x720_30\SlideEditing_1280x720_30.yuv
+
+实验目的：修改代码后，如果没有开IBC，应该和没修改代码跑出来的结果一模一样
+
+3_修改代码+关闭IBC_10：
+修改编码器，关闭IBC
+指令：
+--preset fast --IBC --bitrate 1024 --input-res 1280x720 --frames 10 --fps 60 --threads 1 -I 10 --ssim --tune zerolatency --psnr -o slideEditing.264 F:\HEVCseq\SlideEditing_1280x720_30\SlideEditing_1280x720_30.yuv
+
+观察现象：
+第一次编码出来结果和未修改编码器的结果不同，检查了一下，想起来自己将--tune psnr加入到了--tune zerolatency里面。也就说，打开--tune psnr可以带来将近2db的性能。这个后续需要了解一下
+
+4_修改代码+关闭IBC_20：
+修改编码器，关闭IBC
+指令：
+--preset fast --IBC --bitrate 1024 --input-res 1280x720 --frames 20 --fps 60 --threads 1 -I 10 --ssim --tune zerolatency --psnr -o slideEditing.264 F:\HEVCseq\SlideEditing_1280x720_30\SlideEditing_1280x720_30.yuv
+
+实验目的：修改代码后，也开了IBC，和没修改的代码相比，应该除了参考帧列表不同，模式选择一模一样
+
+5_修改代码+开启IBC_10：
+修改编码器，打开IBC
+也就是I帧变P帧，但是模式选择没有改变
+指令：
+--preset fast --IBC --bitrate 1024 --input-res 1280x720 --frames 10 --fps 60 --threads 1 -I 10 --ssim --tune zerolatency --psnr -o slideEditing.264 F:\HEVCseq\SlideEditing_1280x720_30\SlideEditing_1280x720_30.yuv
+
+观察现象：
+1. 实验结果中没有了mb_I，这个有点疑惑，P帧中也应该有mb_I吧，这个需要了解一下，编码器的mb_I定义是什么？
+2. 发现，编码的帧率降低了很多 fps 12 -> 9，仅仅是改变了一下编码器，速度不应该降低这么多 
+3. 发现，第一个IDR帧选择的模式也大有不同，可能原因是率控前就更改了帧类型，导致分配的码率不对
+4. 第2、3帧的语法元素解析错误，这个问题就严重了，需要解决
+
+6_修改代码+开启IBC_20：
+修改编码器，打开IBC
+也就是I帧变P帧，但是模式选择没有改变
+指令：
+--preset fast --IBC --bitrate 1024 --input-res 1280x720 --frames 20 --fps 60 --threads 1 -I 10 --ssim --tune zerolatency --psnr -o slideEditing.264 F:\HEVCseq\SlideEditing_1280x720_30\SlideEditing_1280x720_30.yuv
+

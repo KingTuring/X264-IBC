@@ -460,11 +460,57 @@ void x264_frame_init_lowres( x264_t *h, x264_frame_t *frame )
     int i_width  = frame->i_width[0];
 
     // duplicate last row and column so that their interpolation doesn't have to be special-cased
+    // 把最后一行和最后一列复制一下
+    // 这样的话最后一行和最后一列，插值的时候就不需要当做特例进行处理了
+    // for 处理列
     for( int y = 0; y < i_height; y++ )
         src[i_width+y*i_stride] = src[i_width-1+y*i_stride];
+    // memcpy 处理行
     memcpy( src+i_stride*i_height, src+i_stride*(i_height-1), (i_width+1) * SIZEOF_PIXEL );
     h->mc.frame_init_lowres_core( src, frame->lowres[0], frame->lowres[1], frame->lowres[2], frame->lowres[3],
                                   i_stride, frame->i_stride_lowres, frame->i_width_lowres, frame->i_lines_lowres );
+    // 插值，
+    // 这里应该是用汇编写的
+    // 所以跳转不到
+    // 源码分析
+    // A00   A01   A02   A03   A04
+//     0     h     0     h
+// A10   A11   A12   A13   A14
+//     v     c     v     c
+// A20   A21   A22   A23   A24
+//     0     h     0     h
+// A30   A31   A32   A33   A34
+//     v     c     v     c
+// A40   A41   A42   A43   A44
+// 不包括最后一行和最后一列
+//    static void frame_init_lowres_core(uint8_t * src0, uint8_t * dst0, uint8_t * dsth, uint8_t * dstv, uint8_t * dstc,
+//        int src_stride, int dst_stride, int width, int height)
+//    {
+//        int x, y;
+//        for (y = 0; y < height; y++)
+//        {
+//            uint8_t* src1 = src0 + src_stride;
+//            uint8_t* src2 = src1 + src_stride;
+//            for (x = 0; x < width; x++)
+//            {
+//                // slower than naive bilinear, but matches asm
+//#define FILTER(a,b,c,d) ((((a+b+1)>>1)+((c+d+1)>>1)+1)>>1)
+//                dst0[x] = FILTER(src0[2 * x], src1[2 * x], src0[2 * x + 1], src1[2 * x + 1]);
+//                dsth[x] = FILTER(src0[2 * x + 1], src1[2 * x + 1], src0[2 * x + 2], src1[2 * x + 2]);
+//                dstv[x] = FILTER(src1[2 * x], src2[2 * x], src1[2 * x + 1], src2[2 * x + 1]);
+//                dstc[x] = FILTER(src1[2 * x + 1], src2[2 * x + 1], src1[2 * x + 2], src2[2 * x + 2]);
+//#undef FILTER
+//            }
+//            src0 += src_stride * 2;
+//            dst0 += dst_stride;
+//            dsth += dst_stride;
+//            dstv += dst_stride;
+//            dstc += dst_stride;
+//        }
+//    }
+    // 所以也能理解，为什么存插值的平面需要4倍了
+    // 存了四个插值平面
+    // question? 不能理解，为啥存四个
     x264_frame_expand_border_lowres( frame );
 
     memset( frame->i_cost_est, -1, sizeof(frame->i_cost_est) );
