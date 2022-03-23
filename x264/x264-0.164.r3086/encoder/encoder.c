@@ -2668,9 +2668,13 @@ static inline void slice_init( x264_t *h, int i_nal_type, int i_global_qp )
     else
     {
         slice_header_init( h, &h->sh, h->sps, h->pps, -1, h->i_frame_num, i_global_qp );
+        // slice header 是要给 NALU 中写的那些头元素
+        // 包括 qp 参考列表是否重排等等
 
         h->sh.i_num_ref_idx_l0_active = h->i_ref[0] <= 0 ? 1 : h->i_ref[0];
         h->sh.i_num_ref_idx_l1_active = h->i_ref[1] <= 0 ? 1 : h->i_ref[1];
+        // i_num_ref_idx_l0_active 是参考列表1 中帧的个数
+        // 这就是说，参考列表中最少为 1 帧
         if( h->sh.i_num_ref_idx_l0_active != h->pps->i_num_ref_idx_l0_default_active ||
             (h->sh.i_type == SLICE_TYPE_B && h->sh.i_num_ref_idx_l1_active != h->pps->i_num_ref_idx_l1_default_active) )
         {

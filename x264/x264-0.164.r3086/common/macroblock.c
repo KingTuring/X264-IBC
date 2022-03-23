@@ -529,6 +529,9 @@ void x264_macroblock_thread_init( x264_t *h )
      *                                                       v V V V V
      *                                                       v V V V V
      */
+    // h->mb.pic.fenc_buf 是结构体 pic 开辟好的，内存对齐的缓存区
+    // h->mb.pic.p_fenc 是 mb 的三个平面的指针 指向缓存区里
+    //
     h->mb.pic.p_fenc[0] = h->mb.pic.fenc_buf;
     h->mb.pic.p_fdec[0] = h->mb.pic.fdec_buf + 2*FDEC_STRIDE;
     if( CHROMA_FORMAT )

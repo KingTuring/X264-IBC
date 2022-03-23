@@ -251,6 +251,7 @@ void x264_analyse_weight_frame( x264_t *h, int end )
 static void mb_analyse_load_costs( x264_t *h, x264_mb_analysis_t *a )
 {
     a->p_cost_mv = h->cost_mv[a->i_qp];
+    // 编码 QP 的 cost
     a->p_cost_ref[0] = h->cost_table->ref[a->i_qp][x264_clip3(h->sh.i_num_ref_idx_l0_active-1,0,2)];
     a->p_cost_ref[1] = h->cost_table->ref[a->i_qp][x264_clip3(h->sh.i_num_ref_idx_l1_active-1,0,2)];
 }
@@ -1277,6 +1278,7 @@ static void mb_analyse_inter_p16x16( x264_t *h, x264_mb_analysis_t *a )
         i_halfpel_thresh -= m.i_ref_cost;
 
         /* search with ref */
+        // 每次编码前是把第 i_ref 的参考帧复制到了 h->mb.pic.p_fref[0][i_ref] 的位置
         LOAD_HPELS( &m, h->mb.pic.p_fref[0][i_ref], 0, i_ref, 0, 0 );
         LOAD_WPELS( &m, h->mb.pic.p_fref_w[i_ref], 0, i_ref, 0, 0 );
 
@@ -2942,6 +2944,12 @@ void x264_macroblock_analyse( x264_t *h )
     mb_analyse_init( h, &analysis, h->mb.i_qp );
 
     /*--------------------------- Do the analysis ---------------------------*/
+
+    /*******************************************************/
+    /*
+    I帧：只使用帧内预测，分别计算亮度16x16（4种）和4x4（9种）所有模式的代价值，选出代价最小的模式
+    */
+    /*******************************************************/
 #if Avc2CodeValid
     // avc2code - ReferenceFramesListFixed - version2
     if (h->i_nal_ref_idc == NAL_PRIORITY_HIGHEST || h->sh.i_type == SLICE_TYPE_I)
@@ -2949,17 +2957,22 @@ void x264_macroblock_analyse( x264_t *h )
     if (h->sh.i_type == SLICE_TYPE_I)
 #endif // Avc2CodeValid
     {
-intra_analysis:
+    intra_analysis:
+        //通过一系列帧内预测模式（16x16的4种,4x4的9种）代价的计算得出代价最小的最优模式
         if( analysis.i_mbrd )
             mb_init_fenc_cache( h, analysis.i_mbrd >= 2 );
         
         //Intra宏块帧内预测模式分析
+        //帧内预测分析  
+        //从16×16的SAD,4个8×8的SAD和，16个4×4SAD中选出最优方式
         mb_analyse_intra( h, &analysis, COST_MAX );
         if( analysis.i_mbrd )
             intra_rd( h, &analysis, COST_MAX );
 
         i_cost = analysis.i_satd_i16x16;
         h->mb.i_type = I_16x16;
+        //如果I4x4或者I8x8开销更小的话就拷贝  
+        //copy if little
         COPY2_IF_LT( i_cost, analysis.i_satd_i4x4, h->mb.i_type, I_4x4 );
         COPY2_IF_LT( i_cost, analysis.i_satd_i8x8, h->mb.i_type, I_8x8 );
         if( analysis.i_satd_pcm < i_cost )
@@ -2986,6 +2999,9 @@ intra_analysis:
         else
         {
             /* Special fast-skip logic using information from mb_info. */
+            // 使用 mb_info 来进行 快速skip 判断
+            // mb_info 好像是 输入给的
+            // 所以可能是输入给的强制 skip
             if( h->fdec->mb_info && (h->fdec->mb_info[h->mb.i_mb_xy]&X264_MBINFO_CONSTANT) )
             {
                 if( !SLICE_MBAFF && (h->fdec->i_frame - h->fref[0][0]->i_frame) == 1 && !h->sh.b_weighted_pred &&
@@ -3031,19 +3047,32 @@ intra_analysis:
                     // 分析是否是skip模式
                     b_skip = x264_macroblock_probe_pskip( h );
             }
+            // 如果 analyse.i_subpel_refine >= 3 就尝试 skip
+            // 否则， 如果相邻编码块有 P_SKIP 就判断是否 skip
         }
 
         h->mc.prefetch_ref( h->mb.pic.p_fref[0][0][h->mb.i_mb_x&3], h->mb.pic.i_stride[0], 1 );
+        // 这个函数出现的第二次
+        // 这一次， 最后一个参数是 1
 
         if( b_skip )
         {
             h->mb.i_type = P_SKIP;
             h->mb.i_partition = D_16x16;
+            // 这里就可以看到
+            // 每个 mb 的模式选择信息是这么写的
+            // h->mb.i_type 和 h->mb.i_partition
             assert( h->mb.cache.pskip_mv[1] <= h->mb.mv_max_spel[1] || h->i_thread_frames == 1 );
 skip_analysis:
             /* Set up MVs for future predictors */
             for( int i = 0; i < h->mb.pic.i_fref[0]; i++ )
                 M32( h->mb.mvr[0][i][h->mb.i_mb_xy] ) = 0;
+            // mvr[i][j][k]
+            // i ： 参考列表数目
+            // j ： 参考帧的索引
+            // k ： mb 的绝对索引 mb_xy
+            // 存的是 16*16 块的的 MV
+            // 是不是可以说明 skip 的块 MV 默认是0
         }
         else
         {
