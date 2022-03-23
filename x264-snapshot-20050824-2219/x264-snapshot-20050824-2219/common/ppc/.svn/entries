@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   committed-rev="233"
+   name=""
+   committed-date="2005-05-15T20:19:22.312172Z"
+   url="svn://svn.videolan.org/x264/trunk/common/ppc"
+   last-author="titer"
+   kind="dir"
+   uuid="df754926-b1dd-0310-bc7b-ec298dee348c"
+   revision="287"/>
+<entry
+   committed-rev="233"
+   name="dct.h"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-05-15T20:19:22.312172Z"
+   checksum="4f34e4dcb9deafefbe0426ebb792127d"
+   last-author="titer"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="231"
+   name="mc.c"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-05-14T07:08:08.437035Z"
+   checksum="659f81d8f9b11547e6b538f448e09d59"
+   last-author="titer"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="233"
+   name="ppccommon.h"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-05-15T20:19:22.312172Z"
+   checksum="f1f333d4613329b32af3aee7e3c3ad65"
+   last-author="titer"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="233"
+   name="pixel.c"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-05-15T20:19:22.312172Z"
+   checksum="0bacfe8de624b85edf62d5645b3c7397"
+   last-author="titer"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="142"
+   name="mc.h"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-02-24T13:09:55.691881Z"
+   checksum="5419d760452a1966d9936ca1a65e354f"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="1"
+   name="pixel.h"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2004-06-03T19:29:33.000000Z"
+   checksum="b41edab1bac51baf6c94565f3779df40"
+   last-author="fenrir"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="233"
+   name="dct.c"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-05-15T20:19:22.312172Z"
+   checksum="5744d2388b8759c2e9a686b2ef2eb1cb"
+   last-author="titer"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+</wc-entries>

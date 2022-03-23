@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   committed-rev="283"
+   name=""
+   committed-date="2005-08-09T07:17:26.833545Z"
+   url="svn://svn.videolan.org/x264/trunk/tools"
+   last-author="fenrir"
+   kind="dir"
+   uuid="df754926-b1dd-0310-bc7b-ec298dee348c"
+   revision="287"/>
+<entry
+   committed-rev="1"
+   name="x264-rd.sh"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2004-06-03T19:29:33.000000Z"
+   checksum="a61ebb96218d1c905e045bf160f95851"
+   last-author="fenrir"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="270"
+   name="q_matrix_jvt.cfg"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-06-21T14:49:27.137893Z"
+   checksum="07548aaddcc7b3b8cc19e1007a3ef3e5"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="1"
+   name="Jamfile"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2004-06-03T19:29:33.000000Z"
+   checksum="a772885f3c6de2564ca18d0c698caf9e"
+   last-author="fenrir"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="267"
+   name="avc2avi.c"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-06-20T00:36:05.229860Z"
+   checksum="e38de974bcea53c9635636873d6948da"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="283"
+   name="xyuv.c"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-08-09T07:17:26.833545Z"
+   checksum="ebbdc3a97e0d7a3f3e2dc883ce9fe6e0"
+   last-author="fenrir"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="1"
+   name=".cvsignore"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2004-06-03T19:29:33.000000Z"
+   checksum="562e0e69bdb5703ba016e3a44424385d"
+   last-author="fenrir"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="186"
+   name="countquant_x264.pl"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-04-05T20:50:13.383094Z"
+   checksum="9e7c5d39c51e296314394dd68ec88064"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+</wc-entries>

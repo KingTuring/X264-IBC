@@ -1,0 +1,19 @@
+﻿  Assembly H:\Downloads\x264-snapshot-20050824-2219 (1)\x264-snapshot-20050824-2219\common\i386\cpu-a.asm
+  'nasm' 不是内部或外部命令，也不是可运行的程序
+  或批处理文件。
+  Assembly H:\Downloads\x264-snapshot-20050824-2219 (1)\x264-snapshot-20050824-2219\common\i386\dct-a.asm
+  'nasm' 不是内部或外部命令，也不是可运行的程序
+  或批处理文件。
+  Assembly H:\Downloads\x264-snapshot-20050824-2219 (1)\x264-snapshot-20050824-2219\common\i386\mc-a.asm
+  'nasm' 不是内部或外部命令，也不是可运行的程序
+  或批处理文件。
+  Assembly H:\Downloads\x264-snapshot-20050824-2219 (1)\x264-snapshot-20050824-2219\common\i386\mc-a2.asm
+  'nasm' 不是内部或外部命令，也不是可运行的程序
+  或批处理文件。
+  Assembly H:\Downloads\x264-snapshot-20050824-2219 (1)\x264-snapshot-20050824-2219\common\i386\pixel-a.asm
+  'nasm' 不是内部或外部命令，也不是可运行的程序
+  或批处理文件。
+  Assembly H:\Downloads\x264-snapshot-20050824-2219 (1)\x264-snapshot-20050824-2219\common\i386\predict-a.asm
+  'nasm' 不是内部或外部命令，也不是可运行的程序
+  或批处理文件。
+E:\Program Files (x86)\VS2019\MSBuild\Microsoft\VC\v160\Microsoft.CppCommon.targets(241,5): error MSB8066: “..\..\common\i386\cpu-a.asm;..\..\common\i386\dct-a.asm;..\..\common\i386\mc-a.asm;..\..\common\i386\mc-a2.asm;..\..\common\i386\pixel-a.asm;..\..\common\i386\predict-a.asm”的自定义生成已退出，代码为 9009。

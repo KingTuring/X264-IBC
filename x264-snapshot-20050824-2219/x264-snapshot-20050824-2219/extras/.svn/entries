@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   committed-rev="272"
+   name=""
+   committed-date="2005-07-07T07:48:36.387784Z"
+   url="svn://svn.videolan.org/x264/trunk/extras"
+   last-author="fenrir"
+   kind="dir"
+   uuid="df754926-b1dd-0310-bc7b-ec298dee348c"
+   revision="287"/>
+<entry
+   committed-rev="272"
+   name="getopt.c"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-07-07T07:48:36.387784Z"
+   checksum="a5c78d61ff1f2a7c61a5a0613ffdf4c1"
+   last-author="fenrir"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="1"
+   name="getopt.h"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2004-06-03T19:29:33.000000Z"
+   checksum="5f6f295c5da0eacff4ec44e01922fc8c"
+   last-author="fenrir"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="1"
+   name="stdint.h"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2004-06-03T19:29:33.000000Z"
+   checksum="0bfca903009beb391bb97bcb4c7fc9ea"
+   last-author="fenrir"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+</wc-entries>

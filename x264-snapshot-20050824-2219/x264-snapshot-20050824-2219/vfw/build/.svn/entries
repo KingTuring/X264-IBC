@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   committed-rev="257"
+   name=""
+   committed-date="2005-06-11T19:15:35.464395Z"
+   url="svn://svn.videolan.org/x264/trunk/vfw/build"
+   last-author="pengvado"
+   kind="dir"
+   uuid="df754926-b1dd-0310-bc7b-ec298dee348c"
+   revision="287"/>
+<entry
+   name="cygwin"
+   kind="dir"/>
+<entry
+   name="win32"
+   kind="dir"/>
+</wc-entries>

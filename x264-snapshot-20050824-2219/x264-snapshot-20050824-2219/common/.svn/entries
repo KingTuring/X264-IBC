@@ -1,0 +1,295 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   committed-rev="285"
+   name=""
+   committed-date="2005-08-09T18:48:57.313708Z"
+   url="svn://svn.videolan.org/x264/trunk/common"
+   last-author="pengvado"
+   kind="dir"
+   uuid="df754926-b1dd-0310-bc7b-ec298dee348c"
+   revision="287"/>
+<entry
+   committed-rev="262"
+   name="cabac.h"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-06-14T19:19:52.913353Z"
+   checksum="6aa8f9d4f04fe4a3c23830c4ee67c00c"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="226"
+   name="mc.c"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-05-12T19:48:10.789882Z"
+   checksum="56ae724be129186104095ab8d8020adf"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="150"
+   name="frame.h"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-03-04T12:52:35.940962Z"
+   checksum="2595307c90a30c482a88ee6b3a2aaf23"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="269"
+   name="set.h"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-06-21T08:16:01.906747Z"
+   checksum="ddf62006911562f966d82416e6ca6a25"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   name="ppc"
+   kind="dir"/>
+<entry
+   committed-rev="123"
+   name="mc.h"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-02-13T09:49:42.403428Z"
+   checksum="8a504f48b4d4fa540c13842bdd072537"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="227"
+   name="display.h"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-05-12T23:03:49.164315Z"
+   checksum="49a03dab3d1bd197558a6d0d13403f15"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="227"
+   name="display-x11.c"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-05-12T23:03:49.164315Z"
+   checksum="b811a08dfbe1af83d6d87c4df011cc1e"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   name="sparc"
+   kind="dir"/>
+<entry
+   committed-rev="213"
+   name="cpu.c"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-04-19T18:44:42.405799Z"
+   checksum="d93e4ce3a3a015dc67a684ab9f8870ac"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="1"
+   name="vlc.h"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2004-06-03T19:29:33.000000Z"
+   checksum="24e2987bcb4b14509719c82683660faa"
+   last-author="fenrir"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="251"
+   name="predict.c"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-06-05T11:07:28.069447Z"
+   checksum="5d8f335e8b3c16440b86eedae5705c5e"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="15"
+   name="mdate.c"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2004-07-28T21:39:06.785561Z"
+   checksum="c66de80e79a1d079d202d327a99a1b09"
+   last-author="titer"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="1"
+   name="cpu.h"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2004-06-03T19:29:33.000000Z"
+   checksum="dc524ce4373353b3ecfd59ca79598399"
+   last-author="fenrir"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="246"
+   name="predict.h"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-06-03T05:33:15.071722Z"
+   checksum="3f0605a4e0c8b9c2758bcea4a3900f0b"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   name="i386"
+   kind="dir"/>
+<entry
+   committed-rev="119"
+   name="bs.h"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-02-10T21:54:40.096779Z"
+   checksum="db004a8271e08f3f425ef46177b3c3cf"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="251"
+   name="dct.c"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-06-05T11:07:28.069447Z"
+   checksum="0bcb92ca139cdea90ee6848c97c4c4ba"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="246"
+   name="visualize.c"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-06-03T05:33:15.071722Z"
+   checksum="3214c5fb35e29e30742fd0a39b5c2d79"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="285"
+   name="macroblock.c"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-08-09T18:48:57.313708Z"
+   checksum="904da1917612f232df6a337b45e3eb79"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="134"
+   name="clip1.h"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-02-22T05:19:02.217694Z"
+   checksum="236ba1355320cfd9b4e160444ff80c25"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="246"
+   name="dct.h"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-06-03T05:33:15.071722Z"
+   checksum="8d652e062d0ebc9add9e320765c023ec"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="227"
+   name="visualize.h"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-05-12T23:03:49.164315Z"
+   checksum="423d4b22ca3a1e3009f8d94b88025bd2"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="266"
+   name="macroblock.h"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-06-20T00:08:28.113535Z"
+   checksum="72e6a133ccd4ead74ce74acf42537c1b"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="279"
+   name="pixel.c"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-07-22T15:48:18.654594Z"
+   checksum="20424612e76410d1252c4d3d3c1b3ec6"
+   last-author="fenrir"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="15"
+   name="csp.c"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2004-07-28T21:39:06.785561Z"
+   checksum="0a0bc377564e5baef50d7f5ed417f1f4"
+   last-author="titer"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="264"
+   name="pixel.h"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-06-17T08:21:48.511717Z"
+   checksum="2f6e35d5f2d5b100614e41a740b1ce84"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="269"
+   name="common.c"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-06-21T08:16:01.906747Z"
+   checksum="6b5b60182d21b9fc290b1adcb60ef628"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="254"
+   name="cabac.c"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-06-08T00:38:03.465428Z"
+   checksum="047d03071d014467e299e48b1e1fa267"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="1"
+   name="csp.h"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2004-06-03T19:29:33.000000Z"
+   checksum="5ba3fea01d4c7487073d5ef5c7a3b1ab"
+   last-author="fenrir"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   name="amd64"
+   kind="dir"/>
+<entry
+   committed-rev="246"
+   name="frame.c"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-06-03T05:33:15.071722Z"
+   checksum="65808de05c5dfdbb46385d8afb7eb010"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="269"
+   name="set.c"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-06-21T08:16:01.906747Z"
+   checksum="121935d22f3cab5ba84d79a2766b912c"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="269"
+   name="common.h"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-06-21T08:16:01.906747Z"
+   checksum="35c33a0bd8b08adddffc5885b2a241bc"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+</wc-entries>

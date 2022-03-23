@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   committed-rev="199"
+   name=""
+   committed-date="2005-04-12T18:45:24.469936Z"
+   url="svn://svn.videolan.org/x264/trunk/testing"
+   last-author="titer"
+   kind="dir"
+   uuid="df754926-b1dd-0310-bc7b-ec298dee348c"
+   revision="287"/>
+<entry
+   committed-rev="199"
+   name="checkasm.c"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-04-12T18:45:24.469936Z"
+   checksum="350d543597a3bc20cb16d74248f21a53"
+   last-author="titer"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="1"
+   name="edge-detec.c"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2004-06-03T19:29:33.000000Z"
+   checksum="cda509f2712467496dad3cabaffd17e5"
+   last-author="fenrir"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="67"
+   name="macroblock-dz.c"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2004-12-14T02:04:02.176565Z"
+   checksum="4c67a8cfe26aa5711d9d8d3430601d88"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+</wc-entries>

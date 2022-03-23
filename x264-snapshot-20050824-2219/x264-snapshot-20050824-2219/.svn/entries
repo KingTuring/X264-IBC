@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   committed-rev="287"
+   name=""
+   committed-date="2005-08-17T15:18:42.723495Z"
+   url="svn://svn.videolan.org/x264/trunk"
+   last-author="pengvado"
+   kind="dir"
+   uuid="df754926-b1dd-0310-bc7b-ec298dee348c"
+   prop-time="2005-08-24T20:19:58.000000Z"
+   revision="287"/>
+<entry
+   name="encoder"
+   kind="dir"/>
+<entry
+   committed-rev="277"
+   name="configure"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-07-20T15:39:44.787744Z"
+   checksum="b2df797e5d201ff7dcb253c26c139eaf"
+   last-author="fenrir"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="286"
+   name="x264.c"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-08-16T15:09:41.029532Z"
+   checksum="35d2dbdd11353ee842d1f09f5a6fb702"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="42"
+   name="AUTHORS"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2004-08-28T22:19:15.747323Z"
+   checksum="4b3d2418c2d08d75e68ea9b044b733a2"
+   last-author="fenrir"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   name="common"
+   kind="dir"/>
+<entry
+   committed-rev="285"
+   name="x264.h"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-08-09T18:48:57.313708Z"
+   checksum="61f7f018c2215583a4b8409bbd6a6983"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="195"
+   name="version.sh"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-04-11T21:21:05.309273Z"
+   checksum="c2a397f59600188edeeb5e2f01e34e71"
+   last-author="titer"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   name="build"
+   kind="dir"/>
+<entry
+   name="tools"
+   kind="dir"/>
+<entry
+   committed-rev="284"
+   name="matroska.c"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-08-09T07:20:26.505762Z"
+   checksum="d7dd141fcfbbe7aef6aaf48c5745484a"
+   last-author="fenrir"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   name="vfw"
+   kind="dir"/>
+<entry
+   name="decoder"
+   kind="dir"/>
+<entry
+   name="doc"
+   kind="dir"/>
+<entry
+   committed-rev="84"
+   name="TODO"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-01-05T07:08:40.601946Z"
+   checksum="16dd431faacb2b0a817fa3dc40ba0c57"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   name="extras"
+   kind="dir"/>
+<entry
+   committed-rev="284"
+   name="matroska.h"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-08-09T07:20:26.505762Z"
+   checksum="aa55d81610b0b340ade62564dcfc4c9d"
+   last-author="fenrir"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="1"
+   name="COPYING"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2004-06-03T19:29:33.000000Z"
+   checksum="94d55d512a9ba36caa9b7df079bae19f"
+   last-author="fenrir"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   name="testing"
+   kind="dir"/>
+<entry
+   committed-rev="282"
+   name="Makefile"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-08-07T17:17:05.157784Z"
+   checksum="c216d16ad70435aae186e508dc648623"
+   last-author="titer"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+</wc-entries>

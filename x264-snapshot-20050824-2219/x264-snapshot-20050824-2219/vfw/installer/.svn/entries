@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   committed-rev="257"
+   name=""
+   committed-date="2005-06-11T19:15:35.464395Z"
+   url="svn://svn.videolan.org/x264/trunk/vfw/installer"
+   last-author="pengvado"
+   kind="dir"
+   uuid="df754926-b1dd-0310-bc7b-ec298dee348c"
+   revision="287"/>
+<entry
+   committed-rev="257"
+   name="x264vfw.ico"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-06-11T19:15:35.464395Z"
+   checksum="d18cf28f15a31599655c9b9d9f2be4fe"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="257"
+   name="win.bmp"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-06-11T19:15:35.464395Z"
+   checksum="cbe40fd2b1ec96daedc65da172d90022"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="257"
+   name="x264-conf.nsi"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-06-11T19:15:35.464395Z"
+   checksum="bd7359aaf4544d0b2e3edb09e2f6447b"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+</wc-entries>

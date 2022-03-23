@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   committed-rev="218"
+   name=""
+   committed-date="2005-04-30T01:20:50.208150Z"
+   url="svn://svn.videolan.org/x264/trunk/build/win32"
+   last-author="pengvado"
+   kind="dir"
+   uuid="df754926-b1dd-0310-bc7b-ec298dee348c"
+   revision="287"/>
+<entry
+   committed-rev="218"
+   name="libx264.dsp"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-04-30T01:20:50.208150Z"
+   checksum="2573ed6d5e46191ffeba82082884cc4c"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="1"
+   name="x264.dsw"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2004-06-03T19:29:33.000000Z"
+   checksum="ba846e0bce38a611cb0c873954c44214"
+   last-author="fenrir"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="128"
+   name="x264.dsp"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-02-16T04:59:21.721281Z"
+   checksum="8163296564d45add491c37c2c92a18e9"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+</wc-entries>

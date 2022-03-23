@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   committed-rev="274"
+   name=""
+   committed-date="2005-07-13T15:52:59.959970Z"
+   url="svn://svn.videolan.org/x264/trunk/common/amd64"
+   last-author="pengvado"
+   kind="dir"
+   uuid="df754926-b1dd-0310-bc7b-ec298dee348c"
+   revision="287"/>
+<entry
+   committed-rev="213"
+   name="cpu-a.asm"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-04-19T18:44:42.405799Z"
+   checksum="c6df6c576bcba341c86d2cc25bffa859"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="213"
+   name="dct-a.asm"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-04-19T18:44:42.405799Z"
+   checksum="1a73b1e54d14c837b38ed8fe1adec52b"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="246"
+   name="predict-a.asm"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-06-03T05:33:15.071722Z"
+   checksum="a61e0798b2d3928f91e6903f6813249c"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="213"
+   name="mc-a.asm"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-04-19T18:44:42.405799Z"
+   checksum="14a3110ba2e61bcaaba53e6653efd93c"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="225"
+   name="mc-a2.asm"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-05-11T17:58:00.482766Z"
+   checksum="ceda4b27e388e85d85aaee0c98e0cfcb"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="274"
+   name="pixel-a.asm"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-07-13T15:52:59.959970Z"
+   checksum="642d8af7883468e30cabb14296af2da5"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+</wc-entries>

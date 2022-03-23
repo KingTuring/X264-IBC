@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   committed-rev="287"
+   name=""
+   committed-date="2005-08-17T15:18:42.723495Z"
+   url="svn://svn.videolan.org/x264/trunk/vfw"
+   last-author="pengvado"
+   kind="dir"
+   uuid="df754926-b1dd-0310-bc7b-ec298dee348c"
+   revision="287"/>
+<entry
+   name="build"
+   kind="dir"/>
+<entry
+   committed-rev="89"
+   name="driverproc.c"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-01-10T09:29:31.092377Z"
+   checksum="7e6273bf97bd835537533c6b9a25accb"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   name="w32api"
+   kind="dir"/>
+<entry
+   committed-rev="263"
+   name="config.c"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-06-14T19:49:16.029479Z"
+   checksum="a056f40bf1fea0f875eb0d01a0c25092"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="287"
+   name="resource.rc"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-08-17T15:18:42.723495Z"
+   checksum="5726f381a7d3f0ec28dbbb324c5c3c21"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="257"
+   name="driverproc.def"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-06-11T19:15:35.464395Z"
+   checksum="1f65637e30062f68a17d8c49dd353ba9"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="261"
+   name="x264vfw.h"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-06-12T23:17:12.735209Z"
+   checksum="b3233b2d07bfed71837f76b58c0c8635"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   name="installer"
+   kind="dir"/>
+<entry
+   committed-rev="261"
+   name="resource.h"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-06-12T23:17:12.735209Z"
+   checksum="6de4f29b216f18444cf36a6323f2397c"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="261"
+   name="codec.c"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-06-12T23:17:12.735209Z"
+   checksum="b2c99ad5a2b587ab6c2118b443881b10"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+</wc-entries>

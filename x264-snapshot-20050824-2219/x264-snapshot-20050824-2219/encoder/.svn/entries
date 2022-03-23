@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   committed-rev="281"
+   name=""
+   committed-date="2005-07-26T16:07:17.695911Z"
+   url="svn://svn.videolan.org/x264/trunk/encoder"
+   last-author="pengvado"
+   kind="dir"
+   uuid="df754926-b1dd-0310-bc7b-ec298dee348c"
+   revision="287"/>
+<entry
+   committed-rev="136"
+   name="set.h"
+   text-time="2005-08-24T20:19:57.000000Z"
+   committed-date="2005-02-22T22:08:07.753798Z"
+   checksum="45a43d56733ef9be53f142a88626bc3a"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:57.000000Z"/>
+<entry
+   committed-rev="139"
+   name="analyse.h"
+   text-time="2005-08-24T20:19:57.000000Z"
+   committed-date="2005-02-24T08:31:12.184879Z"
+   checksum="7631232aad83c5f2e90eabef6b82f53d"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:57.000000Z"/>
+<entry
+   committed-rev="264"
+   name="me.c"
+   text-time="2005-08-24T20:19:57.000000Z"
+   committed-date="2005-06-17T08:21:48.511717Z"
+   checksum="4bc769c0020ef07e6f85180debb97e03"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:57.000000Z"/>
+<entry
+   committed-rev="163"
+   name="ratecontrol.h"
+   text-time="2005-08-24T20:19:57.000000Z"
+   committed-date="2005-03-11T18:10:35.499687Z"
+   checksum="ed528d8ebdb6f0a893b0cc470b0a32e6"
+   last-author="mru"
+   kind="file"
+   prop-time="2005-08-24T20:19:57.000000Z"/>
+<entry
+   committed-rev="172"
+   name="me.h"
+   text-time="2005-08-24T20:19:57.000000Z"
+   committed-date="2005-03-15T02:30:16.668272Z"
+   checksum="939bbee0a2ee611b66ec41daf0a8eb98"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:57.000000Z"/>
+<entry
+   committed-rev="266"
+   name="macroblock.c"
+   text-time="2005-08-24T20:19:57.000000Z"
+   committed-date="2005-06-20T00:08:28.113535Z"
+   checksum="eaf4d0f01af30d1253ccaf9dea74c9c6"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:57.000000Z"/>
+<entry
+   committed-rev="264"
+   name="slicetype_decision.c"
+   text-time="2005-08-24T20:19:57.000000Z"
+   committed-date="2005-06-17T08:21:48.511717Z"
+   checksum="c0a97cb2168f119833c3e784f7ea3bec"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:57.000000Z"/>
+<entry
+   committed-rev="273"
+   name="encoder.c"
+   text-time="2005-08-24T20:19:57.000000Z"
+   committed-date="2005-07-10T12:51:21.610377Z"
+   checksum="c5256a4e833c7e861406462d9eff5625"
+   last-author="titer"
+   kind="file"
+   prop-time="2005-08-24T20:19:57.000000Z"/>
+<entry
+   committed-rev="262"
+   name="macroblock.h"
+   text-time="2005-08-24T20:19:57.000000Z"
+   committed-date="2005-06-14T19:19:52.913353Z"
+   checksum="1be2d86e0549defd5f24a076b70b9fb6"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:57.000000Z"/>
+<entry
+   committed-rev="262"
+   name="rdo.c"
+   text-time="2005-08-24T20:19:57.000000Z"
+   committed-date="2005-06-14T19:19:52.913353Z"
+   checksum="50cfcd1269f629455fe0c5b983e5493d"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:57.000000Z"/>
+<entry
+   committed-rev="43"
+   name="eval.c"
+   text-time="2005-08-24T20:19:57.000000Z"
+   committed-date="2004-08-28T22:19:47.544993Z"
+   checksum="4ac66f94430617b911dca466a998d064"
+   last-author="fenrir"
+   kind="file"
+   prop-time="2005-08-24T20:19:57.000000Z"/>
+<entry
+   committed-rev="262"
+   name="cavlc.c"
+   text-time="2005-08-24T20:19:57.000000Z"
+   committed-date="2005-06-14T19:19:52.913353Z"
+   checksum="f1648a189c11f0b88f99019f9d76583c"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:57.000000Z"/>
+<entry
+   committed-rev="262"
+   name="cabac.c"
+   text-time="2005-08-24T20:19:57.000000Z"
+   committed-date="2005-06-14T19:19:52.913353Z"
+   checksum="e2c6f0ea41f67671afe9c8090fd89f9c"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:57.000000Z"/>
+<entry
+   committed-rev="266"
+   name="set.c"
+   text-time="2005-08-24T20:19:57.000000Z"
+   committed-date="2005-06-20T00:08:28.113535Z"
+   checksum="01b716c928db776e5c1a1453d9b1f239"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:57.000000Z"/>
+<entry
+   committed-rev="277"
+   name="ratecontrol.c"
+   text-time="2005-08-24T20:19:57.000000Z"
+   committed-date="2005-07-20T15:39:44.787744Z"
+   checksum="393c15b5f4ff8d9c081e0778ee381d65"
+   last-author="fenrir"
+   kind="file"
+   prop-time="2005-08-24T20:19:57.000000Z"/>
+<entry
+   committed-rev="281"
+   name="analyse.c"
+   text-time="2005-08-24T20:19:57.000000Z"
+   committed-date="2005-07-26T16:07:17.695911Z"
+   checksum="0b648a64642972c0a622d8cbd7c3f3de"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:57.000000Z"/>
+</wc-entries>

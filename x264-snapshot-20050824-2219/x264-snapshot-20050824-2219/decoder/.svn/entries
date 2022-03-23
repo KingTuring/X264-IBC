@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   committed-rev="80"
+   name=""
+   committed-date="2004-12-31T02:33:21.142708Z"
+   url="svn://svn.videolan.org/x264/trunk/decoder"
+   last-author="pengvado"
+   kind="dir"
+   uuid="df754926-b1dd-0310-bc7b-ec298dee348c"
+   revision="287"/>
+<entry
+   committed-rev="1"
+   name="set.h"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2004-06-03T19:29:33.000000Z"
+   checksum="bc89bcdf9cc73e8cdaee8a46b3a267dc"
+   last-author="fenrir"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="1"
+   name="macroblock.h"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2004-06-03T19:29:33.000000Z"
+   checksum="ae56894eaa884d44b634d0492598938f"
+   last-author="fenrir"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="80"
+   name="vlc.c"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2004-12-31T02:33:21.142708Z"
+   checksum="875cd7d4f204cdd43433848a3cc60479"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="80"
+   name="decoder.c"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2004-12-31T02:33:21.142708Z"
+   checksum="9d6bd486e2574f3fecad44a179e25377"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="1"
+   name="vlc.h"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2004-06-03T19:29:33.000000Z"
+   checksum="aa2e8d37600cf84778ab792d6a248c4f"
+   last-author="fenrir"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="80"
+   name="set.c"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2004-12-31T02:33:21.142708Z"
+   checksum="8a0ee4ea065fc99d6c963f19bae975dd"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="80"
+   name="macroblock.c"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2004-12-31T02:33:21.142708Z"
+   checksum="e9fc84c2a25155135d57e5a0efa20469"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+</wc-entries>

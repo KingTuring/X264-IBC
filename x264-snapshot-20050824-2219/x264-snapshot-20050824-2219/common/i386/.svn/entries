@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   committed-rev="274"
+   name=""
+   committed-date="2005-07-13T15:52:59.959970Z"
+   url="svn://svn.videolan.org/x264/trunk/common/i386"
+   last-author="pengvado"
+   kind="dir"
+   uuid="df754926-b1dd-0310-bc7b-ec298dee348c"
+   revision="287"/>
+<entry
+   committed-rev="1"
+   name="dct.h"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2004-06-03T19:29:33.000000Z"
+   checksum="87d88bcf9576d7aa693549fa38b2f268"
+   last-author="fenrir"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="217"
+   name="mc-c.c"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-04-25T18:39:32.276727Z"
+   checksum="03e86fb37b510313d3a8d51f4c86729a"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="246"
+   name="predict.h"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-06-03T05:33:15.071722Z"
+   checksum="b5a2d8e08304501201292bee63864933"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="79"
+   name="cpu-a.asm"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2004-12-31T01:56:26.188246Z"
+   checksum="6fe5f251231d1839e196759b278eba5a"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="170"
+   name="mc.h"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-03-14T13:05:57.744019Z"
+   checksum="b2c2f04e9f7289515bf56922fa7f2587"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="79"
+   name="dct-a.asm"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2004-12-31T01:56:26.188246Z"
+   checksum="5855b6c1f0e77ffaa21c11684fff100d"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="165"
+   name="pixel.h"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-03-13T07:04:16.160704Z"
+   checksum="1c26c8a1880f4d36ecb86d69d5bef7ed"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="246"
+   name="predict-a.asm"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-06-03T05:33:15.071722Z"
+   checksum="deb62d44ce08eb29ddb631fb8ef06e7e"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="80"
+   name="dct-c.c"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2004-12-31T02:33:21.142708Z"
+   checksum="67dc21f31fc9f140c0140c4f55db311a"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="246"
+   name="predict.c"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-06-03T05:33:15.071722Z"
+   checksum="316e617c46d3b9f4f50044ce6a9a1b1c"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="170"
+   name="mc-a.asm"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-03-14T13:05:57.744019Z"
+   checksum="8443331d36ad4d61467f7cd1617af147"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="221"
+   name="mc-a2.asm"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-05-10T08:21:36.583973Z"
+   checksum="663ceb63b5d319cfb75cf68bf37b8896"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+<entry
+   committed-rev="274"
+   name="pixel-a.asm"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-07-13T15:52:59.959970Z"
+   checksum="10edb98215f0247a41d0cf39bc984045"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+</wc-entries>

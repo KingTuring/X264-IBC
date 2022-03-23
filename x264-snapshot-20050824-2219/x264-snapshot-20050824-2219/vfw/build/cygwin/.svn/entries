@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   committed-rev="257"
+   name=""
+   committed-date="2005-06-11T19:15:35.464395Z"
+   url="svn://svn.videolan.org/x264/trunk/vfw/build/cygwin"
+   last-author="pengvado"
+   kind="dir"
+   uuid="df754926-b1dd-0310-bc7b-ec298dee348c"
+   revision="287"/>
+<entry
+   committed-rev="257"
+   name="Makefile"
+   text-time="2005-08-24T20:19:58.000000Z"
+   committed-date="2005-06-11T19:15:35.464395Z"
+   checksum="9997756a1af4f8c54ddddbe2fa4ae33e"
+   last-author="pengvado"
+   kind="file"
+   prop-time="2005-08-24T20:19:58.000000Z"/>
+</wc-entries>
