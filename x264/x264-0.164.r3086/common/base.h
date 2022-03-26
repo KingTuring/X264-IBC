@@ -177,6 +177,9 @@ enum sei_payload_type_e
 #define LUMA_DC   48
 #define CHROMA_DC 49
 
+ // Z扫描
+ // 只有当划分成 4*4 的时候使用
+
 static const uint8_t x264_scan8[16*3 + 3] =
 {
     4+ 1*8, 5+ 1*8, 4+ 2*8, 5+ 2*8,

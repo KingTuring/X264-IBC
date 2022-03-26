@@ -466,7 +466,7 @@ del /f /q $(OutDir)\licenses\x264.txt
       <AdditionalIncludeDirectories>.\;..\;..\extras\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <C99Support>true</C99Support>
       <MinimalRebuild>false</MinimalRebuild>
-      <StructMemberAlignment>8Bytes</StructMemberAlignment>
+      <StructMemberAlignment>16Bytes</StructMemberAlignment>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>

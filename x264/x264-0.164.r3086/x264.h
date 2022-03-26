@@ -368,6 +368,9 @@ typedef struct x264_param_t
     int         b_open_gop;
     int         b_bluray_compat;
     int         i_avcintra_class;
+    // 指的是 AVC-Intra 编码模式
+    // 满足 H264 码流的一种新模式
+    // 但是只有 I帧编码 I-only
     int         i_avcintra_flavor;
 
     int         b_deblocking_filter;

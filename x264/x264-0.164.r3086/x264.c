@@ -2018,6 +2018,26 @@ static int encode( x264_param_t *param, cli_opt_t *opt )
 
     opt->b_progress &= param->i_log_level < X264_LOG_DEBUG;
 
+//typedef struct x264_api_t
+//{
+//    /* Internal reference to x264_t data */
+//    x264_t* x264;
+//
+//    /* API entry points */
+//    void (*nal_encode)(x264_t* h, uint8_t* dst, x264_nal_t* nal);
+//    int  (*encoder_reconfig)(x264_t*, x264_param_t*);
+//    void (*encoder_parameters)(x264_t*, x264_param_t*);
+//    int  (*encoder_headers)(x264_t*, x264_nal_t** pp_nal, int* pi_nal);
+//    int  (*encoder_encode)(x264_t*, x264_nal_t** pp_nal, int* pi_nal, x264_picture_t* pic_in, x264_picture_t* pic_out);
+//    void (*encoder_close)(x264_t*);
+//    int  (*encoder_delayed_frames)(x264_t*);
+//    int  (*encoder_maximum_delayed_frames)(x264_t*);
+//    void (*encoder_intra_refresh)(x264_t*);
+//    int  (*encoder_invalidate_reference)(x264_t*, int64_t pts);
+//} x264_api_t;
+
+    
+
     /* set up pulldown */
     if( opt->i_pulldown && !param->b_vfr_input )
     {
@@ -2031,6 +2051,7 @@ static int encode( x264_param_t *param, cli_opt_t *opt )
     }
 
     h = x264_encoder_open( param );
+//x264_api_t* temp = (x264_api_t*)h;
     FAIL_IF_ERROR2( !h, "x264_encoder_open failed\n" );
 
     x264_encoder_parameters( h, param );

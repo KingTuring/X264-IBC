@@ -441,6 +441,10 @@ REALIGN_STACK void x264_param_default( x264_param_t *param )
     param->i_log_level = X264_LOG_INFO;              // 默认 打印等级 X264_LOG_INFO
 
     /* */
+    //关于x264的profile
+    //baseline：I / P，CALVC
+    //main：B，场编码，cabac
+    //high(也就是Rext)：SI / SP，I_8x8
     param->analyse.intra = X264_ANALYSE_I4x4 | X264_ANALYSE_I8x8;           // 默认 帧内分析模式，也就是说，可以在这里设置，只进行8*8
     param->analyse.inter = X264_ANALYSE_I4x4 | X264_ANALYSE_I8x8            // 默认 帧间分析模式
                          | X264_ANALYSE_PSUB16x16 | X264_ANALYSE_BSUB16x16;

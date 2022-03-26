@@ -309,16 +309,20 @@ static void mb_analyse_init( x264_t *h, x264_mb_analysis_t *a, int qp )
     mb_analyse_init_qp( h, a, qp );
 
     h->mb.b_transform_8x8 = 0;
+    // 是否 8*8 的变换
 
     /* I: Intra part */
     a->i_satd_i16x16 =
     a->i_satd_i8x8   =
     a->i_satd_i4x4   = COST_MAX;
+    // 最后是比较三个结果
+    // 先开始是暂存
     a->i_satd_chroma = CHROMA_FORMAT ? COST_MAX : 0;
 
     /* non-RD PCM decision is inaccurate (as is psy-rd), so don't do it.
      * PCM cost can overflow with high lambda2, so cap it at COST_MAX. */
     uint64_t pcm_cost = ((uint64_t)X264_PCM_COST*a->i_lambda2 + 128) >> 8;
+    // pcm_cost 竟然是固定的
     a->i_satd_pcm = !h->param.i_avcintra_class && !h->mb.i_psy_rd && a->i_mbrd && pcm_cost < COST_MAX ? pcm_cost : COST_MAX;
 
     a->b_fast_intra = 0;
@@ -327,20 +331,28 @@ static void mb_analyse_init( x264_t *h, x264_mb_analysis_t *a, int qp )
         h->mb.b_lossless ? 0 :
         a->i_mbrd ? 2 :
         !h->param.analyse.i_trellis && !h->param.analyse.i_noise_reduction;
+    // 应该是：0 不skip
 
     /* II: Inter part P/B frame */
     if( h->sh.i_type != SLICE_TYPE_I )
     {
         int i_fmv_range = 4 * h->param.analyse.i_mv_range;
+        // i_mv_range 整像素
+        // 四分之一像素 
         // limit motion search to a slightly smaller range than the theoretical limit,
         // since the search may go a few iterations past its given range
         int i_fpel_border = 6; // umh: 1 for diamond, 2 for octagon, 2 for hpel
 
         /* Calculate max allowed MV range */
         h->mb.mv_min[0] = 4*( -16*h->mb.i_mb_x - 24 );
+        // 为什么 -24
         h->mb.mv_max[0] = 4*( 16*( h->mb.i_mb_width - h->mb.i_mb_x - 1 ) + 24 );
+        // 为什么 +24 为什么 -1
         h->mb.mv_min_spel[0] = X264_MAX( h->mb.mv_min[0], -i_fmv_range );
         h->mb.mv_max_spel[0] = X264_MIN( h->mb.mv_max[0], i_fmv_range-1 );
+        // 应该是
+        // fpel ： 四分之一像素 fourth
+        // hpel ： 半像素       half
         if( h->param.b_intra_refresh && h->sh.i_type == SLICE_TYPE_P )
         {
             int max_x = (h->fref[0][0]->i_pir_end_col * 16 - 3)*4; /* 3 pixels of hpel border */
@@ -480,10 +492,15 @@ static void mb_analyse_init( x264_t *h, x264_mb_analysis_t *a, int qp )
 static const int8_t i16x16_mode_available[5][5] =
 {
     {I_PRED_16x16_DC_128, -1, -1, -1, -1},
+    // 所有相邻块都不可用
     {I_PRED_16x16_DC_LEFT, I_PRED_16x16_H, -1, -1, -1},
+    // 只有左侧块可用，所以是 DC_LEFT 和 H
     {I_PRED_16x16_DC_TOP, I_PRED_16x16_V, -1, -1, -1},
+    // 只有上侧块可用，所以是 DC_TOP 和 V
     {I_PRED_16x16_V, I_PRED_16x16_H, I_PRED_16x16_DC, -1, -1},
+    // 只有上侧和左侧块可用，所以是 DC 和 V 和 H
     {I_PRED_16x16_V, I_PRED_16x16_H, I_PRED_16x16_DC, I_PRED_16x16_P, -1},
+    // 所有可用，所以是 DC 和 V 和 H 和 plane模式
 };
 
 static const int8_t chroma_mode_available[5][5] =
@@ -672,8 +689,11 @@ static void mb_analyse_intra_chroma( x264_t *h, x264_mb_analysis_t *a )
 static void mb_analyse_intra( x264_t *h, x264_mb_analysis_t *a, int i_satd_inter )
 {
     const unsigned int flags = h->sh.i_type == SLICE_TYPE_I ? h->param.analyse.intra : h->param.analyse.inter;
+    // flags 标记都采用哪些块的类型
     pixel *p_src = h->mb.pic.p_fenc[0];
     pixel *p_dst = h->mb.pic.p_fdec[0];
+    // 编码帧 和 解码帧
+    // 这里其实应该查一下 解码帧的 原状态？是不是全部未初始化
     static const int8_t intra_analysis_shortcut[2][2][2][5] =
     {
         {{{I_PRED_4x4_HU, -1, -1, -1, -1},
@@ -693,15 +713,27 @@ static void mb_analyse_intra( x264_t *h, x264_mb_analysis_t *a, int i_satd_inter
     /* Disabled i16x16 for AVC-Intra compat */
     if( !h->param.i_avcintra_class )
     {
+        // h->mb.i_neighbour_intra 是在
+        // macroblock_cache_load 中计算的
         const int8_t *predict_mode = predict_16x16_mode_available( h->mb.i_neighbour_intra );
 
         /* Not heavily tuned */
         static const uint8_t i16x16_thresh_lut[11] = { 2, 2, 2, 3, 3, 4, 4, 4, 4, 4, 4 };
         int i16x16_thresh = a->b_fast_intra ? (i16x16_thresh_lut[h->mb.i_subpel_refine]*i_satd_inter)>>1 : COST_MAX;
 
+        // predict_mode[3] >= 0 其实就是说
+        // 三个块都可行
+        // 或者说，需要进行 plane 模式
         if( !h->mb.b_lossless && predict_mode[3] >= 0 )
         {
             h->pixf.intra_mbcmp_x3_16x16( p_src, p_dst, a->i_satd_i16x16_dir );
+            // 计算 p_src 和 p_dst 的 SATD 或 SAD
+            // 存到 a->i_satd_i16x16_dir 里面
+            // 对于 intra_mbcmp_x3_16x16 函数
+            /*movd[r2 + 8], m5; i16x16_dc satd
+            movd[r2 + 4], m4; i16x16_h satd
+            movd[r2 + 0], m0; i16x16_v satd*/
+            // 进行了 DC H V 三个方向的 模式计算
             a->i_satd_i16x16_dir[0] += lambda * bs_size_ue(0);
             a->i_satd_i16x16_dir[1] += lambda * bs_size_ue(1);
             a->i_satd_i16x16_dir[2] += lambda * bs_size_ue(2);
@@ -710,9 +742,12 @@ static void mb_analyse_intra( x264_t *h, x264_mb_analysis_t *a, int i_satd_inter
             COPY2_IF_LT( a->i_satd_i16x16, a->i_satd_i16x16_dir[2], a->i_predict16x16, 2 );
 
             /* Plane is expensive, so don't check it unless one of the previous modes was useful. */
+            // 如果 小于 i16x16_thresh
+            // 才进行 plane 模式的判断
             if( a->i_satd_i16x16 <= i16x16_thresh )
             {
                 h->predict_16x16[I_PRED_16x16_P]( p_dst );
+                // 先预测 再求 satd
                 a->i_satd_i16x16_dir[I_PRED_16x16_P] = h->pixf.mbcmp[PIXEL_16x16]( p_src, FENC_STRIDE, p_dst, FDEC_STRIDE );
                 a->i_satd_i16x16_dir[I_PRED_16x16_P] += lambda * bs_size_ue(3);
                 COPY2_IF_LT( a->i_satd_i16x16, a->i_satd_i16x16_dir[I_PRED_16x16_P], a->i_predict16x16, 3 );
@@ -720,20 +755,36 @@ static void mb_analyse_intra( x264_t *h, x264_mb_analysis_t *a, int i_satd_inter
         }
         else
         {
+            // predict_mode[3] >= 0 不满足的时候
+            // 说明 DC 模式不是那种像素全部可以利用的 DC
+            // 所以分别来判断
             for( ; *predict_mode >= 0; predict_mode++ )
             {
                 int i_satd;
                 int i_mode = *predict_mode;
 
+                // 无损模式暂时不研究
                 if( h->mb.b_lossless )
                     x264_predict_lossless_16x16( h, 0, i_mode );
                 else
                     h->predict_16x16[i_mode]( p_dst );
+                // 先预测，填充到 p_dst
 
                 i_satd = h->pixf.mbcmp[PIXEL_16x16]( p_src, FENC_STRIDE, p_dst, FDEC_STRIDE ) +
                          lambda * bs_size_ue( x264_mb_pred_mode16x16_fix[i_mode] );
+                // 再比较 用 mbcmp[PIXEL_16x16] 求 satd
+
                 COPY2_IF_LT( a->i_satd_i16x16, i_satd, a->i_predict16x16, i_mode );
+                //#define COPY2_IF_LT(x,y,a,b)\
+                //if( (y) < (x) )\
+                //{\
+                //    (x) = (y);\
+                //    (a) = (b);\
+                //}
                 a->i_satd_i16x16_dir[i_mode] = i_satd;
+                // a->i_satd_i16x16_dir 存的是每种模式的 satd
+                // a->i_satd_i16x16 存的是 I_16*16 的最佳 satd
+                // a->i_predict16x16 存的是每次遍历模式的暂存 satd
             }
         }
 
@@ -746,6 +797,9 @@ static void mb_analyse_intra( x264_t *h, x264_mb_analysis_t *a, int i_satd_inter
     }
 
     uint16_t *cost_i4x4_mode = h->cost_table->i4x4_mode[a->i_qp] + 8;
+    /* 8x8 prediction selection */
+    // 按道理讲 默认的应该是 16*16 和 4*4
+    // 怎么这里是 16*16 和 8*8 以及 4*4
     /* 8x8 prediction selection */
     if( flags & X264_ANALYSE_I8x8 )
     {

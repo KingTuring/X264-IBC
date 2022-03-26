@@ -354,11 +354,18 @@ int x264_macroblock_thread_allocate( x264_t *h, int b_lookahead )
 {
     if( !b_lookahead )
     {
+        // intra_border_backup 第一次赋值在这里
         for( int i = 0; i < (PARAM_INTERLACED ? 5 : 2); i++ )
+            // progressive 的话 i == 2
             for( int j = 0; j < (CHROMA444 ? 3 : 2); j++ )
             {
+                // yuv420 的话 j = 2
+                // 应该指的是，444 的时候，需要存 三行
+                // 420 的时候两行就够存了
                 CHECKED_MALLOC( h->intra_border_backup[i][j], (h->sps->i_mb_width*16+32) * SIZEOF_PIXEL );
                 h->intra_border_backup[i][j] += 16;
+                // 为啥加 16 呢
+                // 左右边界 各16
             }
         for( int i = 0; i <= PARAM_INTERLACED; i++ )
         {
@@ -534,6 +541,10 @@ void x264_macroblock_thread_init( x264_t *h )
     //
     h->mb.pic.p_fenc[0] = h->mb.pic.fenc_buf;
     h->mb.pic.p_fdec[0] = h->mb.pic.fdec_buf + 2*FDEC_STRIDE;
+    // 和我的猜想一直
+    // 留了两行
+    // 一行用于存储参考像素
+    // 一行用于隔离
     if( CHROMA_FORMAT )
     {
         h->mb.pic.p_fenc[1] = h->mb.pic.fenc_buf + 16*FENC_STRIDE;
@@ -579,7 +590,13 @@ static ALWAYS_INLINE void macroblock_load_pic_pointers( x264_t *h, int mb_x, int
                      : 16 * mb_x + height * mb_y * i_stride;
     pixel *plane_fdec = &h->fdec->plane[i][i_pix_offset];
     int fdec_idx = b_mbaff ? (mb_interlaced ? (3 + (mb_y&1)) : (mb_y&1) ? 2 : 4) : !(mb_y&1);
+    
     pixel *intra_fdec = &h->intra_border_backup[fdec_idx][i][mb_x*16];
+    // intra_border_backup[fdec_idx][i][mb_x*16];
+    // fdec_idx：偶数行的时候就是 1 奇数行的时候就是 0
+    // i: 0 亮度 1 色度
+    // mb_x*16 位置
+    
     int ref_pix_offset[2] = { i_pix_offset, i_pix_offset };
     /* ref_pix_offset[0] references the current field and [1] the opposite field. */
     if( mb_interlaced )
@@ -597,7 +614,23 @@ static ALWAYS_INLINE void macroblock_load_pic_pointers( x264_t *h, int mb_x, int
     else
     {
         h->mc.copy[PIXEL_16x16]( h->mb.pic.p_fenc[i], FENC_STRIDE, h->mb.pic.p_fenc_plane[i], i_stride2, 16 );
+        // h->mb.pic.p_fenc[i], FENC_STRIDE, h->mb.pic.p_fenc_plane[i], i_stride2, 16
+        // dst                  dst_stride   src                        src_stride rows
+        // h->mb.pic.p_fenc_plane[i] 是指向了 编码平面中当前宏块 的 真实位置
+        // h->mb.pic.p_fenc_plane[i] 面向的内存空间是 h->fenc->plane
+        // h->mb.pic.p_fenc[i] 是先开辟的内存，临时存一下当前宏块像素
+        // h->mb.pic.p_fenc[i] 面向的内存空间是 h->mb.pic.fenc_buf
         memcpy( h->mb.pic.p_fdec[i]-FDEC_STRIDE, intra_fdec, 24*SIZEOF_PIXEL );
+        // 参考像素值
+        // 是在这里拿进来的
+        // 也就是说 &h->intra_border_backup[fdec_idx][i][mb_x*16]  存的是参考像素
+        // 并且拿了 24 个像素值
+        // 也就是说 是 16 + 4 + 4
+        // 为什么是 16 +4 +4 呢？
+        // 因为在 high profile 的时候
+        // 8*8 和 4*4 一样也有 9 种模式
+        // 所以也需要上面一行 额外的 8 个像素值
+
         h->mb.pic.p_fdec[i][-FDEC_STRIDE-1] = intra_fdec[-1];
     }
     if( b_mbaff || h->mb.b_reencode_mb )
@@ -781,6 +814,8 @@ static ALWAYS_INLINE void macroblock_cache_load_neighbours( x264_t *h, int mb_x,
         if( h->mb.slice_table[left[0]] == h->sh.i_first_mb )
         {
             h->mb.i_neighbour |= MB_LEFT;
+            // 如果是当前 slice 第1个CU
+            // 则 MB_LEFT 左侧不可用
 
             // FIXME: We don't currently support constrained intra + mbaff.
             if( !h->param.b_constrained_intra || IS_INTRA( h->mb.i_mb_type_left[0] ) )
@@ -807,6 +842,8 @@ static ALWAYS_INLINE void macroblock_cache_load_neighbours( x264_t *h, int mb_x,
                 /* We only need to prefetch the top blocks because the left was just written
                  * to as part of the previous cache_save.  Since most target CPUs use write-allocate
                  * caches, left blocks are near-guaranteed to be in L1 cache.  Top--not so much. */
+                // 为什么？
+                // 只有第一个宏块才拷贝这些编码信息？
                 x264_prefetch( &h->mb.cbp[top] );
                 x264_prefetch( h->mb.intra4x4_pred_mode[top] );
                 x264_prefetch( &h->mb.non_zero_count[top][12] );
@@ -855,8 +892,16 @@ static ALWAYS_INLINE void macroblock_cache_load_neighbours( x264_t *h, int mb_x,
 #   define LBOT 0
 #endif
 
+
+// 将已编码数据参数和待编码数据 装入到 h->mb->cache 中
+// 是把当前宏块的up宏块和left宏块的intra4x4_pred_mode，non_zero_count加载进来
+// 放到一个数组里面，这个数组用来直接得到当前宏块的左侧和上面宏块的相关值.
+// 要想得到当前块的预测值，要先知道上面，左面的预测值，它的目的是替代getneighbour函数
 static ALWAYS_INLINE void macroblock_cache_load( x264_t *h, int mb_x, int mb_y, int b_mbaff )
 {
+    // 这个函数
+    // 更新了 top topleft topright left
+    // 四个相邻 mb 的 xy y i_neighbour mb_type
     macroblock_cache_load_neighbours( h, mb_x, mb_y, b_mbaff );
 
     int *left = h->mb.i_mb_left_xy;
@@ -871,6 +916,7 @@ static ALWAYS_INLINE void macroblock_cache_load( x264_t *h, int mb_x, int mb_y, 
     /* GCC pessimizes direct loads from heap-allocated arrays due to aliasing. */
     /* By only dereferencing them once, we avoid this issue. */
     int8_t (*i4x4)[8] = h->mb.intra4x4_pred_mode;
+    // (*i4x4)[8] 8指的应该是 4 个亮度 和 2个色度
     uint8_t (*nnz)[48] = h->mb.non_zero_count;
     int16_t *cbp = h->mb.cbp;
 
@@ -883,6 +929,8 @@ static ALWAYS_INLINE void macroblock_cache_load( x264_t *h, int mb_x, int mb_y, 
     {
         h->mb.cache.i_cbp_top = cbp[top];
         /* load intra4x4 */
+        // CP32 copy 32 个 bit
+        // 每个 4*4 的block是 8 bit
         CP32( &h->mb.cache.intra4x4_pred_mode[x264_scan8[0] - 8], &i4x4[top][0] );
 
         /* load non_zero_count */
@@ -1000,8 +1048,12 @@ static ALWAYS_INLINE void macroblock_cache_load( x264_t *h, int mb_x, int mb_y, 
         h->mb.pic.i_fref[1] = h->i_ref[1] << MB_INTERLACED;
     }
 
+    // b_mbaff
+    // 应该指的是 灵活的宏块映射
     if( !b_mbaff )
     {
+        // 偏移了 4*FDEC_STRIDE 只是为了更快，没什么其他意义
+        // 这样 copy 过来有什么意义吗？
         x264_copy_column8( h->mb.pic.p_fdec[0]-1+ 4*FDEC_STRIDE, h->mb.pic.p_fdec[0]+15+ 4*FDEC_STRIDE );
         x264_copy_column8( h->mb.pic.p_fdec[0]-1+12*FDEC_STRIDE, h->mb.pic.p_fdec[0]+15+12*FDEC_STRIDE );
         macroblock_load_pic_pointers( h, mb_x, mb_y, 0, 0, 0 );

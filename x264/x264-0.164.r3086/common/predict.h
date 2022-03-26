@@ -80,6 +80,13 @@ enum intra4x4_pred_e
     I_PRED_4x4_DC_LEFT = 9,
     I_PRED_4x4_DC_TOP  = 10,
     I_PRED_4x4_DC_128  = 11,
+    // 另外的三种 DC 模式
+    // 一般看的是 左侧 上侧 左上侧 三个相邻块是否可用
+    // 当可用情况不同时，编码实际参考的像素是不同的
+    // I_PRED_4x4_DC = 2, 对应所有像素都可用 所以是 A-Q 所有像素值平均值
+    // I_PRED_4x4_DC_LEFT = 9, 对应只有左侧 4 个像素可用
+    // I_PRED_4x4_DC_TOP  = 10, 对应只有上面 8 个像素可用
+    // I_PRED_4x4_DC_128  = 11, 对应没有像素可用，则直接用 128 来代替
 };
 static const int8_t x264_mb_pred_mode4x4_fix[13] =
 {

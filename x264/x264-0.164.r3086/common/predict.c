@@ -60,6 +60,9 @@
         MPIXEL_X4( src+12 ) = v;\
         src += FDEC_STRIDE;\
     }
+// typedef unsigned char      uint8_t;
+// 所以 pixel 是 unsigned char 也就是一个字节
+// MPIXEL_X4 每次赋值 四个 byte
 
 void x264_predict_16x16_dc_c( pixel *src )
 {
@@ -97,6 +100,11 @@ static void predict_16x16_dc_top_c( pixel *src )
 static void predict_16x16_dc_128_c( pixel *src )
 {
     PREDICT_16x16_DC( PIXEL_SPLAT_X4( 1 << (BIT_DEPTH-1) ) );
+    // 传进去的参数值应该是
+    // 128 128 128 128
+    // 1 << (BIT_DEPTH-1) ) 像素的中间值
+    // 最大值 1 << BIT_DEPTH-1
+    // 中间值 1 << (BIT_DEPTH-1) )
 }
 void x264_predict_16x16_h_c( pixel *src )
 {

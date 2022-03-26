@@ -1657,6 +1657,8 @@ x264_t *x264_encoder_open( x264_param_t *param, void *api )
      * unnecessary thermal throttling and whatnot, so keep it disabled for now. */
     h->param.cpu &= ~X264_CPU_AVX512;
 #endif
+    // 重要函数的初始化
+    // 就是那些乱七八糟的汇编函数
     x264_predict_16x16_init( h->param.cpu, h->predict_16x16 );
     x264_predict_8x8c_init( h->param.cpu, h->predict_8x8c );
     x264_predict_8x16c_init( h->param.cpu, h->predict_8x16c );
@@ -2818,6 +2820,8 @@ static intptr_t slice_write( x264_t *h )
 
     /* Slice header */
     x264_macroblock_thread_init( h );
+    // 这个里面还初始化了一部分
+    // h->mb->pic 的数据
 
     /* Set the QP equal to the first QP in the slice for more accurate CABAC initialization. */
     h->mb.i_mb_xy = h->sh.i_first_mb;
