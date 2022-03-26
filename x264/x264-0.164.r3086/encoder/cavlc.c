@@ -535,6 +535,8 @@ void x264_macroblock_write_cavlc( x264_t *h )
     }
 #endif
 
+    // 这里编码头信息
+    // 包括 宏块类型 mv Ref信息
     if( h->sh.i_type == SLICE_TYPE_P )
         cavlc_mb_header_p( h, i_mb_type, chroma );
     else if( h->sh.i_type == SLICE_TYPE_B )

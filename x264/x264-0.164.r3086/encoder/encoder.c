@@ -2490,6 +2490,7 @@ static void fdec_filter_row( x264_t *h, int mb_y, int pass )
 
     if( b_deblock )
         for( int y = min_y; y < mb_y; y += (1 << SLICE_MBAFF) )
+            // 环路滤波
             x264_frame_deblock_row( h, y );
 
     /* FIXME: Prediction requires different borders for interlaced/progressive mc,
@@ -2510,6 +2511,8 @@ static void fdec_filter_row( x264_t *h, int mb_y, int pass )
         /* Can't do hpel until the previous slice is done encoding. */
         if( h->param.analyse.i_subpel_refine )
         {
+            // 半像素 插值
+            // 滤波
             x264_frame_filter( h, h->fdec, min_y, end );
             x264_frame_expand_border_filtered( h, h->fdec, min_y, end );
         }
@@ -2539,6 +2542,7 @@ static void fdec_filter_row( x264_t *h, int mb_y, int pass )
             {
                 uint64_t ssd_u, ssd_v;
                 int v_shift = CHROMA_V_SHIFT;
+                // PSNR 计算
                 x264_pixel_ssd_nv12( &h->pixf,
                     h->fdec->plane[1] + (minpix_y>>v_shift) * h->fdec->i_stride[1], h->fdec->i_stride[1],
                     h->fenc->plane[1] + (minpix_y>>v_shift) * h->fenc->i_stride[1], h->fenc->i_stride[1],
@@ -2556,6 +2560,7 @@ static void fdec_filter_row( x264_t *h, int mb_y, int pass )
              * and overlap by 4 */
             minpix_y += b_start ? 2 : -6;
             h->stat.frame.f_ssim +=
+                // SSIM 计算
                 x264_pixel_ssim_wxh( &h->pixf,
                     h->fdec->plane[0] + 2+minpix_y*h->fdec->i_stride[0], h->fdec->i_stride[0],
                     h->fenc->plane[0] + 2+minpix_y*h->fenc->i_stride[0], h->fenc->i_stride[0],
@@ -2855,6 +2860,7 @@ static intptr_t slice_write( x264_t *h )
         mb_xy = i_mb_x + i_mb_y * h->mb.i_mb_width;
         int mb_spos = bs_pos(&h->out.bs) + x264_cabac_pos(&h->cabac);
 
+        // 每行滤波一次
         if( i_mb_x == 0 )
         {
             if( bitstream_check_buffer( h ) )
@@ -2905,6 +2911,10 @@ static intptr_t slice_write( x264_t *h )
 reencode:
         x264_macroblock_encode( h );
 
+        // 下面是编码块的信息
+        // b_cabac 可选的
+        // baseline 没有 cabac
+        // ultrafast 也没有 cabac
         if( h->param.b_cabac )
         {
             if( mb_xy > h->sh.i_first_mb && !(SLICE_MBAFF && (i_mb_y&1)) )
@@ -2928,6 +2938,9 @@ reencode:
                 if( h->sh.i_type != SLICE_TYPE_I )
                 {
                     bs_write_ue( &h->out.bs, i_skip );  /* skip run */
+                    // 对于非I帧
+                    // 每一次要先编码一个 skip run
+                    // 来标记一下前面有多少连续的 skip
                     i_skip = 0;
                 }
                 x264_macroblock_write_cavlc( h );
@@ -3013,7 +3026,11 @@ cont:
 
         /* save cache */
         x264_macroblock_cache_save( h );
+        // intra_border_backup
 
+        // 率控后处理
+        // x264_ratecontrol_mb( h, mb_size ) < 0
+        // 重新编码
         if( x264_ratecontrol_mb( h, mb_size ) < 0 )
         {
             bitstream_restore( h, &bs_bak[BS_BAK_ROW_VBV], &i_skip, 1 );
@@ -3026,10 +3043,13 @@ cont:
         }
 
         /* accumulate mb stats */
+        // 统计各类型块的数量
         h->stat.frame.i_mb_count[h->mb.i_type]++;
 
         int b_intra = IS_INTRA( h->mb.i_type );
         int b_skip = IS_SKIP( h->mb.i_type );
+
+        // 信息打印
         if( h->param.i_log_level >= X264_LOG_INFO || h->param.rc.b_stat_write )
         {
             if( !b_intra && !b_skip && !IS_DIRECT( h->mb.i_type ) )
@@ -3050,6 +3070,7 @@ cont:
             }
         }
 
+        // 信息打印
         if( h->param.i_log_level >= X264_LOG_INFO )
         {
             if( h->mb.i_cbp_luma | h->mb.i_cbp_chroma )
@@ -3096,6 +3117,8 @@ cont:
         }
 
         /* calculate deblock strength values (actual deblocking is done per-row along with hpel) */
+        // 计算 滤波强度
+        // 已经做过了滤波
         if( b_deblock )
             x264_macroblock_deblock_strength( h );
 
