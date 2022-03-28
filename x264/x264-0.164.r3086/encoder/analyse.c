@@ -1362,6 +1362,12 @@ static void mb_analyse_inter_p16x16( x264_t *h, x264_mb_analysis_t *a )
 
         /* early termination
          * SSD threshold would probably be better than SATD */
+        // 这里是个有趣的点，之前没注意过
+        // skip 的时候 默认是哪一个参考帧呢？
+        // 这里指明了
+        // skip 默认：
+        // 第 0 号 参考帧
+        // m.cost-m.cost_mv < 300*a->i_lambda
         if( i_ref == 0
             && a->b_try_skip
             && m.cost-m.cost_mv < 300*a->i_lambda
@@ -1377,12 +1383,19 @@ static void mb_analyse_inter_p16x16( x264_t *h, x264_mb_analysis_t *a )
 
         m.cost += m.i_ref_cost;
         i_halfpel_thresh += m.i_ref_cost;
+        // i_ref_cost 还没看到是怎么赋值的
+        // 为什么要加上 i_ref_cost
 
         if( m.cost < a->l0.me16x16.cost )
             h->mc.memcpy_aligned( &a->l0.me16x16, &m, sizeof(x264_me_t) );
     }
 
     x264_macroblock_cache_ref( h, 0, 0, 4, 4, 0, a->l0.me16x16.i_ref );
+    // 把当前的最佳模式信息 中的 i_ref
+    // copy 到
+    // h->mb.cache.ref[i_list][X264_SCAN8_0+x+8*y]
+    // 因为这里存的是 p_16*16
+    // 所以 是 0,0,4,4,
     assert( a->l0.me16x16.mv[1] <= h->mb.mv_max_spel[1] || h->i_thread_frames == 1 );
 
     h->mb.i_type = P_L0;
@@ -1466,6 +1479,9 @@ static void mb_analyse_inter_p8x8_mixed_ref( x264_t *h, x264_mb_analysis_t *a )
 
             if( m.cost < l0m->cost )
                 h->mc.memcpy_aligned( l0m, &m, sizeof(x264_me_t) );
+            // 做了和 P_16*16 一模一样的运动搜索过程
+            // 然后将搜索的结果 临时存放在 &a->l0.me8x8 中
+            // 最后再求和决定选择哪种模式
             if( i_ref == i_maxref && i_maxref < h->mb.ref_blind_dupe )
                 i_ref = h->mb.ref_blind_dupe;
             else
