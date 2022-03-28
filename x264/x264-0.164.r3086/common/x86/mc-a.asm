@@ -1555,6 +1555,28 @@ cglobal prefetch_ref, 3,3
     prefetcht0  [r0+r2]
     RET
 
+; 在汇编中
+;  r  就是取 r 的值
+; [r] 是取 r 中值对应地址的值
+
+; LEA: load effective address
+; lea eax，[addr]
+; 就是将表达式addr的值放入eax寄存器
+; lea eax,[401000h]; 将值401000h写入eax寄存器中
+; lea指令右边的操作数表示一个精指针，上述指令和mov eax，401000h是等价的
+
+; 如果 h->mb.pic.p_fref[0][0][h->mb.i_mb_x&3], h->mb.pic.i_stride[0], 1
+; r0 = pixel, r1 = stride, r2 = 1
+; r0 = r0 + 8 + 64
+; prefetcht0 r0
+; prefetcht0 r0 + stride
+; prefetcht0 r0 + 2 * stride
+; prefetcht0 r0 + 3 * stride
+; r0 = r0 + 4 * stride 
+; prefetcht0 r0
+; prefetcht0 r0 + stride
+; prefetcht0 r0 + 2 * stride
+; prefetcht0 r0 + 3 * stride
 
 
 ;=============================================================================

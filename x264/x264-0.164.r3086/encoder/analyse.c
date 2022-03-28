@@ -3049,6 +3049,13 @@ void x264_macroblock_analyse( x264_t *h )
         // 这段汇编代码，暂时还没有看懂
         // 先放一放
         h->mc.prefetch_ref( h->mb.pic.p_fref[0][0][h->mb.i_mb_x&3], h->mb.pic.i_stride[0], 0 );
+        // prefetch
+        // 是把数据放到高速缓存上，为了计算速度
+        // 内存中的连续数据可能存放不连续
+        // 造成 串行 读数据浪费时间
+        // 或者数据导入浪费时间
+        // 提前放入高速缓存区，可以节省大量时间
+        // 放了八个指针进高速缓存
 
         analysis.b_try_skip = 0;
         if( analysis.b_force_intra )
