@@ -1576,7 +1576,6 @@ void x264_macroblock_analyse( x264_t *h )
             int i_type;
             int i_partition;
             int i_thresh16x8;
-
             x264_mb_analyse_load_costs( h, &analysis );
 
             x264_mb_analyse_inter_p16x16( h, &analysis );

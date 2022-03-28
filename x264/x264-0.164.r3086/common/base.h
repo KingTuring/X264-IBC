@@ -154,6 +154,12 @@ enum sei_payload_type_e
 #define X264_SCAN8_SIZE (X264_SCAN8_LUMA_SIZE*3)
 #define X264_SCAN8_0 (4+1*8)
 
+// 当前块的位置
+// cur:         8 + 4
+// top:         cur - 8
+// left:        cur - 1
+// top_right:   cur - 8 + 4
+
 /* Scan8 organization:
  *    0 1 2 3 4 5 6 7
  * 0  DY    y y y y y

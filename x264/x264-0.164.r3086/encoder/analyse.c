@@ -1333,6 +1333,10 @@ static void mb_analyse_inter_p16x16( x264_t *h, x264_mb_analysis_t *a )
 
         /* search with ref */
         // 每次编码前是把第 i_ref 的参考帧复制到了 h->mb.pic.p_fref[0][i_ref] 的位置
+        // pixel *p_fref[12];
+        // pixel* p_fref_w;
+        // pixel* p_fenc[3];
+        // 也就是从 h->mb->pic 给 x264_me_t 赋值
         LOAD_HPELS( &m, h->mb.pic.p_fref[0][i_ref], 0, i_ref, 0, 0 );
         LOAD_WPELS( &m, h->mb.pic.p_fref_w[i_ref], 0, i_ref, 0, 0 );
 
@@ -1346,6 +1350,9 @@ static void mb_analyse_inter_p16x16( x264_t *h, x264_mb_analysis_t *a )
         else
         {
             x264_mb_predict_mv_ref16x16( h, 0, i_ref, mvc, &i_mvc );
+            // mvc 是x264自己加的预测
+            // m.mvp 是正常的 AVC 预测 根据 abc 三个相邻块预测 mvp
+            // mvc 是根据参考帧的信息又加入了 8 个预测 mv
             x264_me_search_ref( h, &m, mvc, i_mvc, p_halfpel_thresh );
         }
 
@@ -3039,6 +3046,8 @@ void x264_macroblock_analyse( x264_t *h )
     {
         int b_skip = 0;
 
+        // 这段汇编代码，暂时还没有看懂
+        // 先放一放
         h->mc.prefetch_ref( h->mb.pic.p_fref[0][0][h->mb.i_mb_x&3], h->mb.pic.i_stride[0], 0 );
 
         analysis.b_try_skip = 0;

@@ -686,6 +686,10 @@ struct x264_t
 
             /* -1 if unused, -2 if unavailable */
             ALIGNED_4( int8_t ref[2][X264_SCAN8_LUMA_SIZE] );
+            // 两个参考帧
+            // 各取 40 个
+            // -1 没用到
+            // -2 不可用
 
             /* 0 if not available */
             ALIGNED_16( int16_t mv[2][X264_SCAN8_LUMA_SIZE][2] );

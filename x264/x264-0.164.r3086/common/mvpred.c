@@ -128,18 +128,25 @@ median:
 
 void x264_mb_predict_mv_16x16( x264_t *h, int i_list, int i_ref, int16_t mvp[2] )
 {
+    // X264_SCAN8_0 - 1     :   left
+    // X264_SCAN8_0 - 8     :   top
+    // X264_SCAN8_0 - 8 + 4 :   top_right
     int     i_refa = h->mb.cache.ref[i_list][X264_SCAN8_0 - 1];
     int16_t *mv_a  = h->mb.cache.mv[i_list][X264_SCAN8_0 - 1];
     int     i_refb = h->mb.cache.ref[i_list][X264_SCAN8_0 - 8];
     int16_t *mv_b  = h->mb.cache.mv[i_list][X264_SCAN8_0 - 8];
     int     i_refc = h->mb.cache.ref[i_list][X264_SCAN8_0 - 8 + 4];
     int16_t *mv_c  = h->mb.cache.mv[i_list][X264_SCAN8_0 - 8 + 4];
+    // -2 代表 unvaliable
     if( i_refc == -2 )
     {
         i_refc = h->mb.cache.ref[i_list][X264_SCAN8_0 - 8 - 1];
         mv_c   = h->mb.cache.mv[i_list][X264_SCAN8_0 - 8 - 1];
     }
 
+    // 如果参考块的参考帧
+    // 和当前讨论的参考帧是同一帧
+    // 才算是可用的
     int i_count = (i_refa == i_ref) + (i_refb == i_ref) + (i_refc == i_ref);
 
     if( i_count > 1 )
@@ -156,8 +163,10 @@ median:
         else
             CP32( mvp, mv_c );
     }
+    // 都不可用的时候 用a
     else if( i_refb == -2 && i_refc == -2 && i_refa != -2 )
         CP32( mvp, mv_a );
+    // a 还是不可用 用三个的中值
     else
         goto median;
 }
