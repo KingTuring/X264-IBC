@@ -3029,6 +3029,9 @@ void x264_macroblock_analyse( x264_t *h )
         mb_analyse_intra( h, &analysis, COST_MAX );
         if( analysis.i_mbrd )
             intra_rd( h, &analysis, COST_MAX );
+            // 如果 i_mbrd > 0
+            // 是要用 rdcost 来做最终的判断的
+            // 那么就要真的调用一下 mb_encode 和 entropy_encode
 
         i_cost = analysis.i_satd_i16x16;
         h->mb.i_type = I_16x16;

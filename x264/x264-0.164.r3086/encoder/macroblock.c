@@ -625,11 +625,21 @@ static ALWAYS_INLINE void macroblock_encode_internal( x264_t *h, int plane_count
     for( int p = 0; p < plane_count; p++ )
         h->mb.cache.non_zero_count[x264_scan8[LUMA_DC+p]] = 0;
 
+    //dj 
+    for (int row = 0; row <= 14; row++) {
+        for (int col = 0; col <= 7; col++) {
+            printf("%4d", h->mb.cache.non_zero_count[row * 8 + col]);
+        }
+        printf("\n");
+    }
+    printf("\n");
+
     if( h->mb.i_type == I_PCM )
     {
         /* if PCM is chosen, we need to store reconstructed frame data */
         for( int p = 0; p < plane_count; p++ )
             h->mc.copy[PIXEL_16x16]( h->mb.pic.p_fdec[p], FDEC_STRIDE, h->mb.pic.p_fenc[p], FENC_STRIDE, 16 );
+        // h->mc.copy[7] 有七个函数，专门为了 PCM 的 copy
         if( chroma )
         {
             int height = 16 >> CHROMA_V_SHIFT;
@@ -808,6 +818,9 @@ static ALWAYS_INLINE void macroblock_encode_internal( x264_t *h, int plane_count
                 int quant_cat = p ? CQM_8PC : CQM_8PY;
                 CLEAR_16x16_NNZ( p );
                 h->dctf.sub16x16_dct8( dct8x8, h->mb.pic.p_fenc[p], h->mb.pic.p_fdec[p] );
+                // mb_encode 就是相当于根据 analysis 分析出的最终模式
+                // 预测得到 最终的 p_fdec
+                // 然后这里熵编码的时候，计算出来最终的 dct 并进行编码
                 h->nr_count[1+!!p*2] += h->mb.b_noise_reduction * 4;
 
                 int plane_cbp = 0;

@@ -165,6 +165,11 @@ static ALWAYS_INLINE void x264_mb_encode_i4x4( x264_t *h, int p, int idx, int i_
     }
 }
 
+// b_predict
+// 最后一个参数是 来声明进这个函数 是否包括预测
+// 因为进来有两种情况
+// 1. analysis 的时候进来，这个时候不需要预测，只需要 量化 变换 编码一下看看需要多少比特
+// 2. encode 的时候进来，这个时候需要预测(这个预测还会滤波)
 static ALWAYS_INLINE void x264_mb_encode_i8x8( x264_t *h, int p, int idx, int i_qp, int i_mode, pixel *edge, int b_predict )
 {
     int x = idx&1;
@@ -177,16 +182,53 @@ static ALWAYS_INLINE void x264_mb_encode_i8x8( x264_t *h, int p, int idx, int i_
 
     if( b_predict )
     {
+        //dj
+        /*for (int row = 0; row < 54; row++) {
+            for (int col = 0; col < FDEC_STRIDE; col++) {
+                printf("%4d", h->mb.pic.fdec_buf[row * FDEC_STRIDE + col]);
+            }
+            printf("\n");
+        }
+        printf("\n");*/
         if( !edge )
         {
+            //dj
+            /*printf("p_dst\n");
+            for (int num = 0; num < 36; ++num) {
+                printf("%4d", p_dst[num]);
+            }
+            printf("\n");
+            printf("edge_buf\n");
+            for (int num = 0; num < 36; ++num) {
+                printf("%4d", edge_buf[num]);
+            }
+            printf("\n");*/
             h->predict_8x8_filter( p_dst, edge_buf, h->mb.i_neighbour8[idx], x264_pred_i4x4_neighbors[i_mode] );
             edge = edge_buf;
+            /*printf("edge_buf\n");
+            for (int num = 0; num < 36; ++num) {
+                printf("%4d", edge_buf[num]);
+            }
+            printf("\n");*/
+            /*printf("p_dst\n");
+            for (int num = 0; num < 36; ++num) {
+                printf("%4d", edge_buf[num]);
+            }
+            printf("\n");*/
         }
 
         if( h->mb.b_lossless )
             x264_predict_lossless_8x8( h, p_dst, p, idx, i_mode, edge );
         else
             h->predict_8x8[i_mode]( p_dst, edge );
+        //dj
+        /*for (int row = 0; row < 54; row++) {
+            for (int col = 0; col < 32; col++) {
+                printf("%4d", h->mb.pic.fdec_buf[row * 32 + col]);
+            }
+            printf("\n");
+        }
+        printf("\n");*/
     }
 
     if( h->mb.b_lossless )
@@ -206,6 +248,14 @@ static ALWAYS_INLINE void x264_mb_encode_i8x8( x264_t *h, int p, int idx, int i_
         h->zigzagf.scan_8x8( h->dct.luma8x8[p*4+idx], dct8x8 );
         h->quantf.dequant_8x8( dct8x8, h->dequant8_mf[p?CQM_8IC:CQM_8IY], i_qp );
         h->dctf.add8x8_idct8( p_dst, dct8x8 );
+        //dj
+        /*for (int row = 0; row < 54; row++) {
+            for (int col = 0; col < 32; col++) {
+                printf("%4d", h->mb.pic.fdec_buf[row * 32 + col]);
+            }
+            printf("\n");
+        }
+        printf("\n");*/
         STORE_8x8_NNZ( p, idx, 1 );
     }
     else

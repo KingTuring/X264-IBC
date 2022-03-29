@@ -528,6 +528,8 @@ struct x264_t
         int8_t  (*intra4x4_pred_mode)[8];   /* intra4x4 pred mode. for non I4x4 set to I_PRED_4x4_DC(2) */
                                             /* actually has only 7 entries; set to 8 for write-combining optimizations */
         uint8_t (*non_zero_count)[16*3];    /* nzc. for I_PCM set to 16 */
+        // 这个 non_zero_count 存的只是 
+        // 是否有非零系数
         int8_t  *chroma_pred_mode;          /* chroma_pred_mode. cabac only. for non intra I_PRED_CHROMA_DC(0) */
         int16_t (*mv[2])[2];                /* mb mv. set to 0 for intra mb */
         uint8_t (*mvd[2])[8][2];            /* absolute value of mb mv difference with predict, clipped to [0,33]. set to 0 if intra. cabac only */
