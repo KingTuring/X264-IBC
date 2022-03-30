@@ -1060,7 +1060,7 @@ static char short_options[] = "8A:B:b:f:hI:i:m:o:p:q:r:t:Vvw";
 // 第四个成员，是 get_opt 检测到该选项后，返回的值(用这个值来说明检测到了这个选项)
 static struct option long_options[] =
 {
-#if Avc2CliLog
+#if Avc2CommandLine
     // Avc2Code - opt
     { "IBC",                  no_argument,       NULL, 'N' },
     { "PLT",                  no_argument,       NULL, 'n' },
@@ -2065,6 +2065,8 @@ static int encode( x264_param_t *param, cli_opt_t *opt )
     FAIL_IF_ERROR2( ticks_per_frame < 1 && !param->b_vfr_input, "ticks_per_frame invalid: %"PRId64"\n", ticks_per_frame );
     ticks_per_frame = X264_MAX( ticks_per_frame, 1 );
 
+    // 如果 b_repeat_headers == 0
+    // 则只在这里编码一次 PPS
     if( !param->b_repeat_headers )
     {
         // Write SPS/PPS/SEI

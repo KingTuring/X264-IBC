@@ -179,6 +179,11 @@ void x264_sps_init( x264_sps_t *sps, int i_id, x264_param_t *param )
     while( (1 << sps->i_log2_max_frame_num) <= max_frame_num )
         sps->i_log2_max_frame_num++;
 
+    // 也就是说
+    // X264 只支持两种 i_poc_type
+    // 0 和 2
+    // 0 是 param->i_bframe || param->b_interlaced || param->i_avcintra_class 的时候
+    // 2 是 场编码 且 单向预测 且 非全I帧
     sps->i_poc_type = param->i_bframe || param->b_interlaced || param->i_avcintra_class ? 0 : 2;
     if( sps->i_poc_type == 0 )
     {

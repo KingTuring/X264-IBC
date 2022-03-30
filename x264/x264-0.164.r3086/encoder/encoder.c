@@ -193,6 +193,7 @@ static void slice_header_init( x264_t *h, x264_slice_header_t *sh,
                 int diff = h->fref[list][i]->i_frame_num - pred_frame_num;
                 sh->ref_pic_list_order[list][i].idc = ( diff > 0 );
                 sh->ref_pic_list_order[list][i].arg = (abs(diff) - 1) & ((1 << sps->i_log2_max_frame_num) - 1);
+                // 只传输小端
                 pred_frame_num = h->fref[list][i]->i_frame_num;
             }
         }
@@ -257,6 +258,9 @@ static void slice_header_write( bs_t *s, x264_slice_header_t *sh, int i_nal_ref_
     if( sh->i_type == SLICE_TYPE_P || sh->i_type == SLICE_TYPE_B )
     {
         bs_write1( s, sh->b_num_ref_idx_override );
+        // 这个标志位 是 表示一下
+        // num_ref_idx_l0_active_minus1
+        // 是根据 PPS 的来，还是在 slice 级重写一下
         if( sh->b_num_ref_idx_override )
         {
             bs_write_ue( s, sh->i_num_ref_idx_l0_active - 1 );
@@ -269,12 +273,16 @@ static void slice_header_write( bs_t *s, x264_slice_header_t *sh, int i_nal_ref_
     if( sh->i_type != SLICE_TYPE_I )
     {
         bs_write1( s, sh->b_ref_pic_list_reordering[0] );
+        // ref_pic_list_modification_flag_l0
+        // 写的实际上是这个标志位
         if( sh->b_ref_pic_list_reordering[0] )
         {
             for( int i = 0; i < sh->i_num_ref_idx_l0_active; i++ )
             {
                 bs_write_ue( s, sh->ref_pic_list_order[0][i].idc );
+                // modification_of_pic_nums_idc
                 bs_write_ue( s, sh->ref_pic_list_order[0][i].arg );
+                // long_term_pic_num 或者是 abs_diff_pic_num_minus1
             }
             bs_write_ue( s, 3 );
         }
@@ -2438,6 +2446,14 @@ static inline void reference_build_list( x264_t *h, int i_poc )
         h->mb.ref_blind_dupe = idx;
     }
 
+#if ReferenceFrameFixed
+    // 在 reference 末尾加入当前帧
+    if (h->param.b_IBC) {
+        x264_frame_push(h->fref[0], h->fdec);
+        //++h->i_ref[0];
+    }
+#endif
+
     assert( h->i_ref[0] + h->i_ref[1] <= X264_REF_MAX );
     h->mb.pic.i_fref[0] = h->i_ref[0];
     h->mb.pic.i_fref[1] = h->i_ref[1];
@@ -3599,11 +3615,6 @@ int     x264_encoder_encode( x264_t *h,
     if( reference_update( h ) )
         return -1;
 
-#if ReferenceFrameFixed
-    // 在 reference 末尾加入当前帧
-    if(h->param.b_IBC) x264_frame_push(h->frames.reference, h->fdec);
-#endif
-
     h->fdec->i_lines_completed = -1;
 
     // 虽然当前帧不是 IDR 帧
@@ -3659,6 +3670,8 @@ int     x264_encoder_encode( x264_t *h,
         i_nal_ref_idc = NAL_PRIORITY_HIGHEST;
         h->sh.i_type = SLICE_TYPE_P;
         reference_reset(h);
+        // 将 reference 从前到后逐个弹出到 unused 里面
+        // 并将当前帧的 poc == 0
         h->frames.i_poc_last_open_gop = -1;
     }
     else
@@ -3830,6 +3843,8 @@ int     x264_encoder_encode( x264_t *h,
     if( h->fenc->b_keyframe )
     {
         /* Write SPS and PPS */
+        // encoder_one_frame 之前
+        // 如果 b_repeat_headers == 0 会发送一次 PPS 和 SPS
         if( h->param.b_repeat_headers )
         {
             /* generate sequence parameters */
@@ -4070,11 +4085,11 @@ int     x264_encoder_encode( x264_t *h,
 
 #if ReferenceFrameFixed
     // 将 reference 末尾的那一帧删掉
-    if (h->param.b_IBC) {
+    /*if (h->param.b_IBC) {
         int i = 0;
-        while (h->frames.reference[i]) i++;
+        while (h->frames.reference[i] != NULL) i++;
         h->frames.reference[i] = NULL;
-    }
+    }*/
 #endif
 
     return encoder_frame_end( thread_oldest, thread_current, pp_nal, pi_nal, pic_out );
