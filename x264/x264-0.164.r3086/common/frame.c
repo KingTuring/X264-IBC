@@ -764,6 +764,7 @@ void x264_frame_push( x264_frame_t **list, x264_frame_t *frame )
     list[i] = frame;
 }
 
+
 x264_frame_t *x264_frame_pop( x264_frame_t **list )
 {
     x264_frame_t *frame;
@@ -800,15 +801,37 @@ void x264_frame_push_unused( x264_t *h, x264_frame_t *frame )
     frame->i_reference_count--;
     if( frame->i_reference_count == 0 )
         x264_frame_push( h->frames.unused[frame->b_fdec], frame );
+    // h->frames.unused 是二维的 
+    // 一个存放 编码帧 一个存放 解码帧
+    // 但是都是存放的用完的
 }
 
 x264_frame_t *x264_frame_pop_unused( x264_t *h, int b_fdec )
 {
     x264_frame_t *frame;
-    if( h->frames.unused[b_fdec][0] )
-        frame = x264_frame_pop( h->frames.unused[b_fdec] );
+
+#if DecFrameFixed
+    if (h->frames.unused[b_fdec][0]) {
+        x264_frame_delete(x264_frame_pop(h->frames.unused[b_fdec]));
+    }
+    frame = frame_new(h, b_fdec);
+#else
+    if (h->frames.unused[b_fdec][0])
+        frame = x264_frame_pop(h->frames.unused[b_fdec]);
+    // 这里我好像懂了
+    // 大概就是 建立一个 f_enc 列表
+    // 里面其实就只是放了两帧
+    // 每次编码的时候 看看有没有用过的 f_enc
+    // 如果有的话，就直接拿来用
+    // 然后初始化一下
+    // 没有的话，就只能 new 一个新的 x264_frame_t 了
+    // 所以看上去的结果就是
+    // 前两帧都需要 frame_new
+    // 之后就开始每次用之前的
     else
-        frame = frame_new( h, b_fdec );
+        frame = frame_new(h, b_fdec);
+#endif
+
     if( !frame )
         return NULL;
     frame->b_last_minigop_bframe = 0;

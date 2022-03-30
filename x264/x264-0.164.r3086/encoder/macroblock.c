@@ -626,13 +626,13 @@ static ALWAYS_INLINE void macroblock_encode_internal( x264_t *h, int plane_count
         h->mb.cache.non_zero_count[x264_scan8[LUMA_DC+p]] = 0;
 
     //dj 
-    for (int row = 0; row <= 14; row++) {
+    /*for (int row = 0; row <= 14; row++) {
         for (int col = 0; col <= 7; col++) {
             printf("%4d", h->mb.cache.non_zero_count[row * 8 + col]);
         }
         printf("\n");
     }
-    printf("\n");
+    printf("\n");*/
 
     if( h->mb.i_type == I_PCM )
     {

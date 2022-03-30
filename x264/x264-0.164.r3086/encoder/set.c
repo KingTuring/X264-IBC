@@ -126,7 +126,7 @@ void x264_sps_init( x264_sps_t *sps, int i_id, x264_param_t *param )
     else
         sps->i_profile_idc  = PROFILE_BASELINE;
 
-#if Avc2CodeValid
+#if SpsFixed
     // avc2code - SpsFixed
     sps->b_scc_extension = (param->b_IBC || param->b_PLT || param->b_ACT || param->b_AMVR);
     sps->b_scc_IBC = param->b_IBC;
@@ -326,7 +326,7 @@ void x264_sps_write( bs_t *s, x264_sps_t *sps )
 
     bs_write_ue( s, sps->i_id );
 
-#if Avc2CodeValid
+#if SpsFixed
     // avc2code - SpsFixed
     bs_write1(s, sps->b_scc_extension);
     if (sps->b_scc_extension) {

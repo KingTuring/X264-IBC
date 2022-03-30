@@ -277,10 +277,10 @@ static const char * const x264_avcintra_flavor_names[] = { "panasonic", "sony", 
 #define IS_X264_TYPE_B(x) ((x)==X264_TYPE_B || (x)==X264_TYPE_BREF)
 
 /* Log level */
-#if Avc2CodeValid
+#if Avc2CliLog
 // Avc2Code - log
 #define X264_LOG_AVC2          (-2)
-#endif // Avc2CodeValid
+#endif // Avc2CliLog
 #define X264_LOG_NONE          (-1)
 #define X264_LOG_ERROR          0
 #define X264_LOG_WARNING        1
@@ -629,13 +629,13 @@ typedef struct x264_param_t
     /* For internal use only */
     void *opaque;
 
-#if Avc2CodeValid
+#if Avc2CommandLine
     // Avc2Code - opt
     int b_IBC;
     int b_PLT;
     int b_ACT;
     int b_AMVR;
-#endif // Avc2CodeValid
+#endif // Avc2CommandLine
 
 } x264_param_t;
 

@@ -281,7 +281,7 @@ void x264_cli_log( const char *name, int i_level, const char *fmt, ... )
     char *s_level;
     switch( i_level )
     {
-#if Avc2CodeValid
+#if Avc2CliLog
         // Avc2Code - log
         case X264_LOG_AVC2:
             s_level = "avc2";
@@ -1060,7 +1060,7 @@ static char short_options[] = "8A:B:b:f:hI:i:m:o:p:q:r:t:Vvw";
 // 第四个成员，是 get_opt 检测到该选项后，返回的值(用这个值来说明检测到了这个选项)
 static struct option long_options[] =
 {
-#if Avc2CodeValid
+#if Avc2CliLog
     // Avc2Code - opt
     { "IBC",                  no_argument,       NULL, 'N' },
     { "PLT",                  no_argument,       NULL, 'n' },
@@ -1517,7 +1517,7 @@ static int parse( int argc, char **argv, x264_param_t *param, cli_opt_t *opt )
 
         switch( c )
         {
-#if Avc2CodeValid
+#if Avc2CommandLine
             // Avc2Code - opt
             case 'N':
                 param->b_IBC = 1;
@@ -1531,7 +1531,7 @@ static int parse( int argc, char **argv, x264_param_t *param, cli_opt_t *opt )
             case 'x':
                 param->b_AMVR = 1;
                 break;
-#endif // Avc2CodeValid
+#endif // Avc2CommandLine
             case 'h':
                 help( &defaults, 0 );
                 exit(0);
@@ -1692,7 +1692,7 @@ generic_option:
         }
     }
 
-#if Avc2CodeValid
+#if ReferenceFrameFixed
     // Avc2Code - ReferenceFramesCountFixed
     if (param->b_IBC == 1) param->i_frame_reference += 1;
 #endif

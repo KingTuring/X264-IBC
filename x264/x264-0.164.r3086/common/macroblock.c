@@ -1052,11 +1052,16 @@ static ALWAYS_INLINE void macroblock_cache_load( x264_t *h, int mb_x, int mb_y, 
     // 应该指的是 灵活的宏块映射
     if( !b_mbaff )
     {
+
         // 偏移了 4*FDEC_STRIDE 只是为了更快，没什么其他意义
-        // 这样 copy 过来有什么意义吗？
+        // 这里是上一个 16*16 宏块编码完了，但是内存还没清除
+        // 现在要准备编码第二个宏块了，所以要把当前宏块的最右边一列元素搬到最左边，来作为当前宏块编码的参考
         x264_copy_column8( h->mb.pic.p_fdec[0]-1+ 4*FDEC_STRIDE, h->mb.pic.p_fdec[0]+15+ 4*FDEC_STRIDE );
         x264_copy_column8( h->mb.pic.p_fdec[0]-1+12*FDEC_STRIDE, h->mb.pic.p_fdec[0]+15+12*FDEC_STRIDE );
         macroblock_load_pic_pointers( h, mb_x, mb_y, 0, 0, 0 );
+        // macroblock_load_pic_pointers 是把帧内滤波的一行像素
+        // 搬到当前重建像素内存的上面一行
+        
         if( CHROMA444 )
         {
             x264_copy_column8( h->mb.pic.p_fdec[1]-1+ 4*FDEC_STRIDE, h->mb.pic.p_fdec[1]+15+ 4*FDEC_STRIDE );

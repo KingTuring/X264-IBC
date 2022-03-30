@@ -2574,6 +2574,9 @@ static inline int reference_update( x264_t *h )
 {
     if( !h->fdec->b_kept_as_ref )
     {
+        // 多线程处理的时候
+        // 就往他们的公共内存里面 push 一帧
+        // 再 pop 一帧出来
         if( h->i_thread_frames > 1 )
         {
             x264_frame_push_unused( h, h->fdec );
@@ -2592,9 +2595,29 @@ static inline int reference_update( x264_t *h )
 
     /* move frame in the buffer */
     x264_frame_push( h->frames.reference, h->fdec );
-    if( h->frames.reference[h->sps->i_num_ref_frames] )
-        x264_frame_push_unused( h, x264_frame_shift( h->frames.reference ) );
+
+#if ReferenceFrameFixed
+    if (h->frames.reference[h->sps->i_num_ref_frames - h->param.b_IBC])
+        x264_frame_push_unused(h, x264_frame_shift(h->frames.reference));
+#else
+    if (h->frames.reference[h->sps->i_num_ref_frames])
+        x264_frame_push_unused(h, x264_frame_shift(h->frames.reference));
+#endif
+    // 上一帧的重建帧
+    // 在上一帧编码完了之后，就一直存在 h->dec 里面，没有修改过
+    // 然后在这里，加入到 h->frames.reference 里面作为之后的参考帧
     h->fdec = x264_frame_pop_unused( h, 1 );
+    // 如果不是 zerolatency 则从缓存的未处理的帧列表中拿出来一帧
+    // 如果是 则创建一个空的 x264_frame_t
+
+    // 对于编码帧 和解码帧
+    // 都是在尽可能重复利用之前的 x264_frame_t
+    // 这样就不用重新开辟内存了
+    // 只需要把像素平面和一些关键信息赋值进去就行了
+    // 像解码帧就是 比如 reference 长度是4
+    // 就是从 第 5 帧开始就不新开辟内存了
+    // 直接用以前弹出来的
+
     if( !h->fdec )
         return -1;
     return 0;
@@ -2869,6 +2892,8 @@ static intptr_t slice_write( x264_t *h )
                 bitstream_backup( h, &bs_bak[BS_BAK_ROW_VBV], i_skip, 1 );
             if( !h->mb.b_reencode_mb )
                 fdec_filter_row( h, i_mb_y, 0 );
+            // 好吧 
+            // 编码前的 fdec_filter_row 实际上是什么也没干就出来了
         }
 
         if( back_up_bitstream )
@@ -3573,6 +3598,12 @@ int     x264_encoder_encode( x264_t *h,
     // 但是每次进去都发现，f->dec还没分配内存
     if( reference_update( h ) )
         return -1;
+
+#if ReferenceFrameFixed
+    // 在 reference 末尾加入当前帧
+    if(h->param.b_IBC) x264_frame_push(h->frames.reference, h->fdec);
+#endif
+
     h->fdec->i_lines_completed = -1;
 
     // 虽然当前帧不是 IDR 帧
@@ -3613,10 +3644,13 @@ int     x264_encoder_encode( x264_t *h,
     h->b_ref_reorder[1] = 0;
     h->fdec->i_poc =
     h->fenc->i_poc = 2 * ( h->fenc->i_frame - X264_MAX( h->frames.i_last_idr, 0 ) );
+    // h->fenc->i_frame 当前帧的 编码顺序
+    // 上一个 IDR 帧的编码顺序
+    // 所以 POC 是 两个 IDR 之间的帧的编码顺序
 
     /* ------------------- Setup frame context ----------------------------- */
     /* 5: Init data dependent of frame type */
-#if Avc2CodeValid
+#if ReferenceFrameFixed
     // avc2code - ReferenceFramesListFixed
     if (h->fenc->i_type == X264_TYPE_IDR && h->param.b_IBC == 1)
     {
@@ -3701,13 +3735,13 @@ int     x264_encoder_encode( x264_t *h,
     /* build ref list 0/1 */
     // h->reference 存了所有的重建帧
     // 然后把这些重建帧分给 list0 和 list1
-#if Avc2CodeValid
+#if FrameIFixedVersion1 || FrameIFixedVersion2
     // avc2code - ReferenceFramesListFixed
     if (h->fenc->i_type == X264_TYPE_IDR && h->param.b_IBC == 1)
     {
         h->fdec->i_type = h->fenc->i_type = X264_TYPE_P;
     }
-#endif // Avc2CodeValid
+#endif // FrameIFixed
     reference_build_list( h, h->fdec->i_poc );
 
     /* ---------------------- Write the bitstream -------------------------- */
@@ -4005,6 +4039,8 @@ int     x264_encoder_encode( x264_t *h,
 
     /* ------------------------ Create slice header  ----------------------- */
     slice_init( h, i_nal_type, i_global_qp );
+    // 主要是初始化 h->sh
+    // 同时也调整了 f->dec 的一些值
 
     /*------------------------- Weights -------------------------------------*/
     if( h->sh.i_type == SLICE_TYPE_B )
@@ -4031,6 +4067,15 @@ int     x264_encoder_encode( x264_t *h,
     else
         if( (intptr_t)slices_write( h ) )
             return -1;
+
+#if ReferenceFrameFixed
+    // 将 reference 末尾的那一帧删掉
+    if (h->param.b_IBC) {
+        int i = 0;
+        while (h->frames.reference[i]) i++;
+        h->frames.reference[i] = NULL;
+    }
+#endif
 
     return encoder_frame_end( thread_oldest, thread_current, pp_nal, pi_nal, pic_out );
 }

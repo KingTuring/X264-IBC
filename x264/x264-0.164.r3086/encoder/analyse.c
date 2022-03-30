@@ -1362,6 +1362,12 @@ static void mb_analyse_inter_p16x16( x264_t *h, x264_mb_analysis_t *a )
 
         /* early termination
          * SSD threshold would probably be better than SATD */
+        // 这里是个有趣的点，之前没注意过
+        // skip 的时候 默认是哪一个参考帧呢？
+        // 这里指明了
+        // skip 默认：
+        // 第 0 号 参考帧
+        // m.cost-m.cost_mv < 300*a->i_lambda
         if( i_ref == 0
             && a->b_try_skip
             && m.cost-m.cost_mv < 300*a->i_lambda
@@ -1377,12 +1383,19 @@ static void mb_analyse_inter_p16x16( x264_t *h, x264_mb_analysis_t *a )
 
         m.cost += m.i_ref_cost;
         i_halfpel_thresh += m.i_ref_cost;
+        // i_ref_cost 还没看到是怎么赋值的
+        // 为什么要加上 i_ref_cost
 
         if( m.cost < a->l0.me16x16.cost )
             h->mc.memcpy_aligned( &a->l0.me16x16, &m, sizeof(x264_me_t) );
     }
 
     x264_macroblock_cache_ref( h, 0, 0, 4, 4, 0, a->l0.me16x16.i_ref );
+    // 把当前的最佳模式信息 中的 i_ref
+    // copy 到
+    // h->mb.cache.ref[i_list][X264_SCAN8_0+x+8*y]
+    // 因为这里存的是 p_16*16
+    // 所以 是 0,0,4,4,
     assert( a->l0.me16x16.mv[1] <= h->mb.mv_max_spel[1] || h->i_thread_frames == 1 );
 
     h->mb.i_type = P_L0;
@@ -1466,6 +1479,9 @@ static void mb_analyse_inter_p8x8_mixed_ref( x264_t *h, x264_mb_analysis_t *a )
 
             if( m.cost < l0m->cost )
                 h->mc.memcpy_aligned( l0m, &m, sizeof(x264_me_t) );
+            // 做了和 P_16*16 一模一样的运动搜索过程
+            // 然后将搜索的结果 临时存放在 &a->l0.me8x8 中
+            // 最后再求和决定选择哪种模式
             if( i_ref == i_maxref && i_maxref < h->mb.ref_blind_dupe )
                 i_ref = h->mb.ref_blind_dupe;
             else
@@ -3011,12 +3027,12 @@ void x264_macroblock_analyse( x264_t *h )
     I帧：只使用帧内预测，分别计算亮度16x16（4种）和4x4（9种）所有模式的代价值，选出代价最小的模式
     */
     /*******************************************************/
-#if Avc2CodeValid
+#if FrameIFixedVersion1
     // avc2code - ReferenceFramesListFixed - version2
     if (h->i_nal_ref_idc == NAL_PRIORITY_HIGHEST || h->sh.i_type == SLICE_TYPE_I)
 #else
     if (h->sh.i_type == SLICE_TYPE_I)
-#endif // Avc2CodeValid
+#endif // FrameIFixedVersion1
     {
     intra_analysis:
         //通过一系列帧内预测模式（16x16的4种,4x4的9种）代价的计算得出代价最小的最优模式
@@ -3052,6 +3068,13 @@ void x264_macroblock_analyse( x264_t *h )
         // 这段汇编代码，暂时还没有看懂
         // 先放一放
         h->mc.prefetch_ref( h->mb.pic.p_fref[0][0][h->mb.i_mb_x&3], h->mb.pic.i_stride[0], 0 );
+        // prefetch
+        // 是把数据放到高速缓存上，为了计算速度
+        // 内存中的连续数据可能存放不连续
+        // 造成 串行 读数据浪费时间
+        // 或者数据导入浪费时间
+        // 提前放入高速缓存区，可以节省大量时间
+        // 放了八个指针进高速缓存
 
         analysis.b_try_skip = 0;
         if( analysis.b_force_intra )
@@ -3211,14 +3234,14 @@ skip_analysis:
             /* Now do 16x8/8x16 */
             int i_thresh16x8 = analysis.l0.me8x8[1].cost_mv + analysis.l0.me8x8[2].cost_mv;
 
-#if Avc2CodeValid
+#if FrameIFixedVersion2
             // avc2code - ReferenceFramesListFixed - version1
             if (h->i_nal_ref_idc != NAL_PRIORITY_HIGHEST && (flags & X264_ANALYSE_PSUB16x16) && (!analysis.b_early_terminate ||
                 analysis.l0.i_cost8x8 < analysis.l0.me16x16.cost + i_thresh16x8) )
 #else
             if ((flags & X264_ANALYSE_PSUB16x16) && (!analysis.b_early_terminate ||
                 analysis.l0.i_cost8x8 < analysis.l0.me16x16.cost + i_thresh16x8))
-#endif // Avc2CodeValid
+#endif // FrameIFixedVersion2
             {
                 int i_avg_mv_ref_cost = (analysis.l0.me8x8[2].cost_mv + analysis.l0.me8x8[2].i_ref_cost
                                       + analysis.l0.me8x8[3].cost_mv + analysis.l0.me8x8[3].i_ref_cost + 1) >> 1;
@@ -3350,7 +3373,7 @@ skip_analysis:
 
             h->mb.i_type = i_type;
             
-#if Avc2CodeValid
+#if FrameIFixedVersion2
             // avc2code - ReferenceFramesListFixed - version1
             if (h->i_nal_ref_idc == NAL_PRIORITY_HIGHEST || (analysis.b_force_intra && !IS_INTRA(i_type)))
 #else

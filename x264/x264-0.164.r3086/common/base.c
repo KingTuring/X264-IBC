@@ -344,13 +344,13 @@ REALIGN_STACK void x264_picture_clean( x264_picture_t *pic )
  ****************************************************************************/
 REALIGN_STACK void x264_param_default( x264_param_t *param )
 {   
-#if Avc2CodeValid
+#if Avc2CommandLine
     // Avc2Code - opt
     param->b_IBC = 0;
     param->b_PLT = 0;
     param->b_ACT = 0;
     param->b_AMVR = 0;
-#endif // Avc2CodeValid
+#endif // Avc2CommandLine
 
     /* */
     memset( param, 0, sizeof( x264_param_t ) );
@@ -448,6 +448,8 @@ REALIGN_STACK void x264_param_default( x264_param_t *param )
     param->analyse.intra = X264_ANALYSE_I4x4 | X264_ANALYSE_I8x8;           // 默认 帧内分析模式，也就是说，可以在这里设置，只进行8*8
     param->analyse.inter = X264_ANALYSE_I4x4 | X264_ANALYSE_I8x8            // 默认 帧间分析模式
                          | X264_ANALYSE_PSUB16x16 | X264_ANALYSE_BSUB16x16;
+    // X264_ANALYSE_PSUB16x16 0010U
+    // X264_ANALYSE_BSUB16x16 0100U
     param->analyse.i_direct_mv_pred = X264_DIRECT_PRED_SPATIAL;             // 默认 选择 mvp 的方式： 空域
     param->analyse.i_me_method = X264_ME_HEX;               // 默认 运动搜索方式： 六边形
     param->analyse.f_psy_rd = 1.0;
@@ -696,12 +698,12 @@ static int param_apply_tune( x264_param_t *param, const char *tune )
             param->b_vfr_input = 0;
             param->rc.b_mb_tree = 0;
 
-#if Avc2CodeValid
+#if Avc2CommandLine
             // avc2code - CommandLineSet
             //if (psy_tuning_used++) goto psy_failure;
             //param->rc.i_aq_mode = X264_AQ_NONE;
             //param->analyse.b_psy = 0;
-#endif // Avc2CodeValid
+#endif // #if Avc2CommandLine
         }
         else if( len == 6 && !strncasecmp( tune, "touhou", 6 ) )
         {
