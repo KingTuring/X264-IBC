@@ -213,6 +213,8 @@ void x264_me_search_ref( x264_t *h, x264_me_t *m, int16_t (*mvc)[2], int i_mvc, 
 
     /* Try extra predictors if provided.  If subme >= 3, check subpel predictors,
      * otherwise round them to fullpel. */
+    // 在 lookahead 决定 slice 类型的时候
+    // 也会进入这个函数，进来的时候 i_subpel_refine == 2
     if( h->mb.i_subpel_refine >= 3 )
     {
         /* Calculate and check the MVP first */
@@ -279,6 +281,8 @@ void x264_me_search_ref( x264_t *h, x264_me_t *m, int16_t (*mvc)[2], int i_mvc, 
         bmx = pmx = x264_clip3( FPEL(m->mvp[0]), mv_x_min, mv_x_max );
         bmy = pmy = x264_clip3( FPEL(m->mvp[1]), mv_y_min, mv_y_max );
         pmv = pack16to32_mask( bmx, bmy );
+        // pack16to32_mask
+        // 一方面来看，是为了快速判断 mv 是否为0的
 
         /* Because we are rounding the predicted motion vector to fullpel, there will be
          * an extra MV cost in 15 out of 16 cases.  However, when the predicted MV is
@@ -322,6 +326,9 @@ void x264_me_search_ref( x264_t *h, x264_me_t *m, int16_t (*mvc)[2], int i_mvc, 
         case X264_ME_DIA:
         {
             /* diamond search, radius 1 */
+            // 好牛逼的处理
+            // bcost 先左移 4 位
+            // 留出来这 4 个位置用来存放 x 和 y 坐标
             bcost <<= 4;
             int i = i_me_range;
             do
@@ -796,6 +803,114 @@ void x264_me_search_ref( x264_t *h, x264_me_t *m, int16_t (*mvc)[2], int i_mvc, 
         refine_subpel( h, m, hpel, qpel, p_halfpel_thresh, 0 );
     }
 }
+
+#if IntraBlockCopy_16_16
+//Fixed according to x264_me_search_ref
+void x264_IBC_search_ref(x264_t* h, x264_me_t* m, int* p_halfpel_thresh)
+{
+    const int bw = x264_pixel_size[m->i_pixel].w;
+    const int bh = x264_pixel_size[m->i_pixel].h;
+    const int i_pixel = m->i_pixel;
+    const int stride = m->i_stride[0];
+    int i_me_range = h->param.analyse.i_me_range;
+    int bmx, bmy, bcost = COST_MAX;
+    int bpred_cost = COST_MAX;
+    int omx, omy, pmx, pmy;
+    pixel* p_fenc = m->p_fenc[0];
+    pixel* p_fref_w = m->p_fref_w;
+    ALIGNED_ARRAY_32(pixel, pix, [16 * 16]);
+    ALIGNED_ARRAY_8(int16_t, mvc_temp, [16], [2]);
+
+    ALIGNED_ARRAY_16(int, costs, [16]);
+
+    int mv_x_min = h->mb.mv_limit_fpel[0][0];
+    int mv_y_min = h->mb.mv_limit_fpel[0][1];
+    int mv_x_max = h->mb.mv_limit_fpel[1][0];
+    int mv_y_max = h->mb.mv_limit_fpel[1][1];
+    /* Special version of pack to allow shortcuts in CHECK_MVRANGE */
+#define pack16to32_mask2(mx,my) (((uint32_t)(mx)<<16)|((uint32_t)(my)&0x7FFF))
+    uint32_t mv_min = pack16to32_mask2(-mv_x_min, -mv_y_min);
+    uint32_t mv_max = pack16to32_mask2(mv_x_max, mv_y_max) | 0x8000;
+    uint32_t pmv, bpred_mv = 0;
+
+#define CHECK_MVRANGE(mx,my) (!(((pack16to32_mask2(mx,my) + mv_min) | (mv_max - pack16to32_mask2(mx,my))) & 0x80004000))
+
+    const uint16_t* p_cost_mvx = m->p_cost_mv - m->mvp[0];
+    const uint16_t* p_cost_mvy = m->p_cost_mv - m->mvp[1];
+
+    /* Try extra predictors if provided.  If subme >= 3, check subpel predictors,
+     * otherwise round them to fullpel. */
+    {
+        /* Calculate and check the fullpel MVP first */
+        bmx = pmx = x264_clip3(FPEL(m->mvp[0]), mv_x_min, mv_x_max);
+        bmy = pmy = x264_clip3(FPEL(m->mvp[1]), mv_y_min, mv_y_max);
+        pmv = pack16to32_mask(bmx, bmy);
+        // pack16to32_mask
+        // 一方面来看，是为了快速判断 mv 是否为0的
+
+        /* Because we are rounding the predicted motion vector to fullpel, there will be
+         * an extra MV cost in 15 out of 16 cases.  However, when the predicted MV is
+         * chosen as the best predictor, it is often the case that the subpel search will
+         * result in a vector at or next to the predicted motion vector.  Therefore, we omit
+         * the cost of the MV from the rounded MVP to avoid unfairly biasing against use of
+         * the predicted motion vector.
+         *
+         * Disclaimer: this is a post-hoc rationalization for why this hack works. */
+        bcost = h->pixf.fpelcmp[i_pixel](p_fenc, FENC_STRIDE, &p_fref_w[bmy * stride + bmx], stride);
+
+        /* Same as above, except the condition is simpler. */
+        if (pmv)
+            COST_MV(0, 0);
+    }
+
+    {
+        /* diamond search, radius 1 */
+        bcost <<= 4;
+        int i = i_me_range;
+        do
+        {
+            COST_MV_X4_DIR(0, -1, 0, 1, -1, 0, 1, 0, costs);
+            COPY1_IF_LT(bcost, (costs[0] << 4) + 1);    // 0001
+            COPY1_IF_LT(bcost, (costs[1] << 4) + 3);    // 0011
+            COPY1_IF_LT(bcost, (costs[2] << 4) + 4);    // 0100
+            COPY1_IF_LT(bcost, (costs[3] << 4) + 12);   // 1100
+            if (!(bcost & 15))
+                break;
+            bmx -= (int32_t)((uint32_t)bcost << 28) >> 30;
+            bmy -= (int32_t)((uint32_t)bcost << 30) >> 30;
+            bcost &= ~15;
+        } while (--i && CHECK_MVRANGE(bmx, bmy));
+        bcost >>= 4;
+    }
+
+    /* -> qpel mv */
+    uint32_t bmv = pack16to32_mask(bmx, bmy);
+    uint32_t bmv_spel = SPELx2(bmv);
+    if (h->mb.i_subpel_refine < 3)
+    {
+        m->cost_mv = p_cost_mvx[bmx * 4] + p_cost_mvy[bmy * 4];
+        m->cost = bcost;
+        /* compute the real cost */
+        if (bmv == pmv) m->cost += m->cost_mv;
+        M32(m->mv) = bmv_spel;
+    }
+    else
+    {
+        M32(m->mv) = bpred_cost < bcost ? bpred_mv : bmv_spel;
+        m->cost = X264_MIN(bpred_cost, bcost);
+    }
+
+    /* subpel refine */
+    if (h->mb.i_subpel_refine >= 2)
+    {
+        int hpel = subpel_iterations[h->mb.i_subpel_refine][2];
+        int qpel = subpel_iterations[h->mb.i_subpel_refine][3];
+        refine_subpel(h, m, hpel, qpel, p_halfpel_thresh, 0);
+    }
+}
+
+#endif
+
 #undef COST_MV
 
 void x264_me_refine_qpel( x264_t *h, x264_me_t *m )

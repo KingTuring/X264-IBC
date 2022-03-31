@@ -1694,7 +1694,7 @@ generic_option:
 
 #if ReferenceFrameFixed
     // Avc2Code - ReferenceFramesCountFixed
-    if (param->b_IBC == 1) param->i_frame_reference += 1;
+    param->i_frame_reference += param->b_IBC;
 #endif
 
     /* If first pass mode is used, apply faster settings. */

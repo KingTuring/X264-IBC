@@ -1438,6 +1438,7 @@ static void mb_analyse_IBC_p16x16(x264_t* h, x264_mb_analysis_t* a)
         LOAD_WPELS(&m, h->mb.pic.p_fref_w[i_ref], 0, i_ref, 0, 0);
 
         x264_mb_predict_mv_16x16(h, 0, i_ref, m.mvp);
+        x264_IBC_search_ref(h, &m,p_halfpel_thresh);
 
         /* save mv for predicting neighbors */
         CP32(h->mb.mvr[0][i_ref][h->mb.i_mb_xy], m.mv);
@@ -1445,7 +1446,7 @@ static void mb_analyse_IBC_p16x16(x264_t* h, x264_mb_analysis_t* a)
 
         /* early termination
          * SSD threshold would probably be better than SATD */
-        if (i_ref == 0
+        /*if (i_ref == 0
             && a->b_try_skip
             && m.cost - m.cost_mv < 300 * a->i_lambda
             && abs(m.mv[0] - h->mb.cache.pskip_mv[0])
@@ -1456,7 +1457,7 @@ static void mb_analyse_IBC_p16x16(x264_t* h, x264_mb_analysis_t* a)
             analyse_update_cache(h, a);
             assert(h->mb.cache.pskip_mv[1] <= h->mb.mv_max_spel[1] || h->i_thread_frames == 1);
             return;
-        }
+        }*/
 
         m.cost += m.i_ref_cost;
         i_halfpel_thresh += m.i_ref_cost;
@@ -1468,19 +1469,16 @@ static void mb_analyse_IBC_p16x16(x264_t* h, x264_mb_analysis_t* a)
     x264_macroblock_cache_ref(h, 0, 0, 4, 4, 0, a->l0.me16x16.i_ref);
     assert(a->l0.me16x16.mv[1] <= h->mb.mv_max_spel[1] || h->i_thread_frames == 1);
 
-    h->mb.i_type = P_L0;
-    if (a->i_mbrd)
-    {
-        mb_init_fenc_cache(h, a->i_mbrd >= 2 || h->param.analyse.inter & X264_ANALYSE_PSUB8x8);
-        if (a->l0.me16x16.i_ref == 0 && M32(a->l0.me16x16.mv) == M32(h->mb.cache.pskip_mv) && !a->b_force_intra)
-        {
-            h->mb.i_partition = D_16x16;
-            x264_macroblock_cache_mv_ptr(h, 0, 0, 4, 4, 0, a->l0.me16x16.mv);
-            a->l0.i_rd16x16 = rd_cost_mb(h, a->i_lambda2);
-            if (!(h->mb.i_cbp_luma | h->mb.i_cbp_chroma))
-                h->mb.i_type = P_SKIP;
-        }
-    }
+    // h->mb.i_type = P_L0;
+    //mb_init_fenc_cache(h, a->i_mbrd >= 2 || h->param.analyse.inter & X264_ANALYSE_PSUB8x8);
+    //if (a->l0.me16x16.i_ref == 0 && M32(a->l0.me16x16.mv) == M32(h->mb.cache.pskip_mv) && !a->b_force_intra)
+    //{
+    //h->mb.i_partition = D_16x16;
+    //x264_macroblock_cache_mv_ptr(h, 0, 0, 4, 4, 0, a->l0.me16x16.mv);
+    //a->l0.i_rd16x16 = rd_cost_mb(h, a->i_lambda2);
+    /*if (!(h->mb.i_cbp_luma | h->mb.i_cbp_chroma))
+        h->mb.i_type = P_SKIP;*/
+    //}
 }
 #endif
 
@@ -3133,11 +3131,18 @@ void x264_macroblock_analyse( x264_t *h )
         else if( analysis.i_mbrd >= 2 )
             intra_rd_refine( h, &analysis );
 
+        // 对于 i_mbrd
+        // == 0 -> 只根据 SATD 来做判断
+        // == 1 -> 基于 SATD 的 RDO
+        // == 2 -> 基于 SSD 的 RDO
+
 #if IntraBlockCopy_16_16
         // avc2code - IntraBlockCopy_16_16
+        //int intra_rd_cost = rd_cost_mb(h, analysis.i_lambda2);
         if (h->param.b_IBC) {
             mb_analyse_load_costs(h, &analysis);
             mb_analyse_IBC_p16x16(h, &analysis);
+            COPY3_IF_LT(i_cost, analysis.l0.me16x16.cost, h->mb.i_type, P_L0, h->mb.i_partition, D_16x16);
         }
 #endif
 

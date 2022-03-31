@@ -565,6 +565,7 @@ void x264_mb_predict_mv_ref16x16( x264_t *h, int i_list, int i_ref, int16_t (*mv
                 M32( mvc[i] ) = (M32( lowres_mv[h->mb.i_mb_xy] )*2)&0xfffeffff;
                 i++;
             }
+            // mvc[0] == ( lowres_mv[h->mb.i_mb_xy] )*2
         }
     }
 
@@ -579,9 +580,13 @@ void x264_mb_predict_mv_ref16x16( x264_t *h, int i_list, int i_ref, int16_t (*mv
     else
     {
         SET_MVP( mvr[h->mb.i_mb_left_xy[0]] );
+        // mvc[1] == 当前参考帧的 mvr[h->mb.i_mb_left_xy[0]]
         SET_MVP( mvr[h->mb.i_mb_top_xy] );
+        // mvc[2] == 当前参考帧的 mvr[h->mb.i_mb_top_xy]
         SET_MVP( mvr[h->mb.i_mb_topleft_xy] );
+        // mvc[3] == 当前参考帧的 mvr[h->mb.i_mb_topleft_xy]
         SET_MVP( mvr[h->mb.i_mb_topright_xy] );
+        // mvc[4] == 当前参考帧的 mvr[h->mb.i_mb_topright_xy]
     }
 #undef SET_IMVP
 #undef SET_MVP
@@ -605,6 +610,7 @@ void x264_mb_predict_mv_ref16x16( x264_t *h, int i_list, int i_ref, int16_t (*mv
         }
 
         SET_TMVP(0,0);
+        // mvc[5] == (0, 0)
         if( h->mb.i_mb_x < h->mb.i_mb_width-1 )
             SET_TMVP(1,0);
         if( h->mb.i_mb_y < h->mb.i_mb_height-1 )

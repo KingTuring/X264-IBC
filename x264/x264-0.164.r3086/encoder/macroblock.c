@@ -968,7 +968,11 @@ static ALWAYS_INLINE void macroblock_encode_internal( x264_t *h, int plane_count
      *      (if multiple mv give same result)*/
     if( !b_force_no_skip )
     {
-        if( h->mb.i_type == P_L0 && h->mb.i_partition == D_16x16 &&
+        if( 
+#if IntraBlockCopy_16_16
+            h->i_nal_ref_idc != NAL_PRIORITY_HIGHEST &&
+#endif
+            h->mb.i_type == P_L0 && h->mb.i_partition == D_16x16 &&
             !(h->mb.i_cbp_luma | h->mb.i_cbp_chroma) &&
             M32( h->mb.cache.mv[0][x264_scan8[0]] ) == M32( h->mb.cache.pskip_mv )
             && h->mb.cache.ref[0][x264_scan8[0]] == 0 )

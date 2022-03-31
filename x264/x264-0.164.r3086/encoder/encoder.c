@@ -3232,7 +3232,23 @@ cont:
             h->fdec->mb_info_free = NULL;
         }
     }
-
+    FILE* rec_pc = fopen("rec.yuv", "ab");
+    pixel* plane = h->fdec->plane[0];
+    for (int hei = 0; hei < h->param.i_height; ++hei) {
+        fwrite(plane, 1, h->fdec->i_width[0], rec_pc);
+        plane += h->fdec->i_stride[0];
+    }
+    plane = h->fdec->plane[1];
+    for (int hei = 0; hei < h->param.i_height; ++hei) {
+        fwrite(plane, 1, h->fdec->i_width[1], rec_pc);
+        plane += h->fdec->i_stride[1];
+    }
+    plane = h->fdec->plane[2];
+    for (int hei = 0; hei < h->param.i_height; ++hei) {
+        fwrite(plane, 1, h->fdec->i_width[2], rec_pc);
+        plane += h->fdec->i_stride[2];
+    }
+    fclose(rec_pc);
     return 0;
 }
 

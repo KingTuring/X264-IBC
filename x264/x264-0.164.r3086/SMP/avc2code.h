@@ -20,7 +20,8 @@
 #define FrameIFixedVersion2 0
 #define ReferenceFrameFixed 0
 #define SpsFixed 0
-#define Avc2CliLog 0
 #define DecFrameFixed 0
+#define IntraBlockCopy_16_16 0
+#define Avc2CliLog 0
 
 #endif
