@@ -645,8 +645,14 @@ static ALWAYS_INLINE void macroblock_load_pic_pointers( x264_t *h, int mb_x, int
                 h->mb.pic.p_fdec[i][-1+j*FDEC_STRIDE] = plane_fdec[-1+j*i_stride2];
     }
     pixel *plane_src, **filtered_src;
-    for( int j = 0; j < h->mb.pic.i_fref[0]; j++ )
+
+#if IntraBlockCopy_16_16
+    for (int j = 0; j < h->mb.pic.i_fref[0] + h->param.b_IBC; j++)
     {
+#else
+    for (int j = 0; j < h->mb.pic.i_fref[0]; j++)
+    {
+#endif
         // Interpolate between pixels in same field.
         if( mb_interlaced )
         {
