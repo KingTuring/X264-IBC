@@ -12,6 +12,8 @@
 #define DecFrameFixed 1
 #define IntraBlockCopy_16_16 1
 #define Avc2CliLog 1
+#define RecFrameOutput 1
+#define BatResOutput 1
 
 #else
 
@@ -23,5 +25,7 @@
 #define DecFrameFixed 0
 #define IntraBlockCopy_16_16 0
 #define Avc2CliLog 0
+#define RecFrameOutput 1
+#define BatResOutput 1
 
 #endif

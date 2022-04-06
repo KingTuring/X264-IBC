@@ -637,6 +637,9 @@ typedef struct x264_param_t
     int b_AMVR;
 #endif // Avc2CommandLine
 
+#if RecFrameOutput
+    char* output_file;
+#endif
 } x264_param_t;
 
 X264_API void x264_nal_encode( x264_t *h, uint8_t *dst, x264_nal_t *nal );

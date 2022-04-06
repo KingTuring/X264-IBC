@@ -2449,8 +2449,9 @@ static inline void reference_build_list( x264_t *h, int i_poc )
 #if ReferenceFrameFixed
     // 在 reference 末尾加入当前帧
     if (h->param.b_IBC) {
-        x264_frame_push(h->fref[0], h->fdec);
+        //x264_frame_push(h->fref[0], h->fdec);
         //++h->i_ref[0];
+        h->fref[0][h->i_ref[0]] = h->fdec;
     }
 #endif
 
@@ -2612,13 +2613,8 @@ static inline int reference_update( x264_t *h )
     /* move frame in the buffer */
     x264_frame_push( h->frames.reference, h->fdec );
 
-#if ReferenceFrameFixed
-    if (h->frames.reference[h->sps->i_num_ref_frames - h->param.b_IBC])
-        x264_frame_push_unused(h, x264_frame_shift(h->frames.reference));
-#else
     if (h->frames.reference[h->sps->i_num_ref_frames])
         x264_frame_push_unused(h, x264_frame_shift(h->frames.reference));
-#endif
     // 上一帧的重建帧
     // 在上一帧编码完了之后，就一直存在 h->dec 里面，没有修改过
     // 然后在这里，加入到 h->frames.reference 里面作为之后的参考帧
@@ -2893,7 +2889,6 @@ static intptr_t slice_write( x264_t *h )
     i_mb_y = h->sh.i_first_mb / h->mb.i_mb_width;
     i_mb_x = h->sh.i_first_mb % h->mb.i_mb_width;
     i_skip = 0;
-
     while( 1 )
     {
         mb_xy = i_mb_x + i_mb_y * h->mb.i_mb_width;
@@ -2946,7 +2941,7 @@ static intptr_t slice_write( x264_t *h )
         else
             x264_macroblock_cache_load_progressive( h, i_mb_x, i_mb_y );
 
-        x264_macroblock_analyse( h );
+         x264_macroblock_analyse( h );
 
         /* encode this macroblock -> be careful it can change the mb type to P_SKIP if needed */
 reencode:
@@ -3232,23 +3227,38 @@ cont:
             h->fdec->mb_info_free = NULL;
         }
     }
-    FILE* rec_pc = fopen("rec.yuv", "ab");
+
+#if  RecFrameOutput
+    char file_name[100];
+    int len = strlen(h->param.output_file);
+    memcpy(file_name, h->param.output_file, len - 3);
+    file_name[len - 3] = 'y';
+    file_name[len - 2] = 'u';
+    file_name[len - 1] = 'v';
+    file_name[len] = '\0';
+    FILE* rec_pc = fopen(file_name , "ab");
     pixel* plane = h->fdec->plane[0];
     for (int hei = 0; hei < h->param.i_height; ++hei) {
         fwrite(plane, 1, h->fdec->i_width[0], rec_pc);
         plane += h->fdec->i_stride[0];
     }
+    pixel* cache_u = malloc(sizeof(pixel) * h->param.i_height * h->param.i_width);
+    pixel* cache_v = cache_u + h->param.i_height * h->param.i_width / 2;
     plane = h->fdec->plane[1];
-    for (int hei = 0; hei < h->param.i_height; ++hei) {
-        fwrite(plane, 1, h->fdec->i_width[1], rec_pc);
+    pixel* temp_u = cache_u, * temp_v = cache_v;
+    for (int hei = 0; hei < h->param.i_height / 2; ++hei) {
+        for (int wid = 0; wid < h->param.i_width; ++wid) {
+            temp_u[wid] = plane[2 * wid];
+            temp_v[wid] = plane[2 * wid + 1];
+        }
         plane += h->fdec->i_stride[1];
+        temp_u += h->param.i_width / 2;
+        temp_v += h->param.i_width / 2;
     }
-    plane = h->fdec->plane[2];
-    for (int hei = 0; hei < h->param.i_height; ++hei) {
-        fwrite(plane, 1, h->fdec->i_width[2], rec_pc);
-        plane += h->fdec->i_stride[2];
-    }
+    fwrite(cache_u, 1, (h->param.i_width / 2) * (h->param.i_height / 2), rec_pc);
+    fwrite(cache_v, 1, (h->param.i_width / 2) * (h->param.i_height / 2), rec_pc);
     fclose(rec_pc);
+#endif //  RecFrameOutput
     return 0;
 }
 
@@ -4099,15 +4109,6 @@ int     x264_encoder_encode( x264_t *h,
         if( (intptr_t)slices_write( h ) )
             return -1;
 
-#if ReferenceFrameFixed
-    // 将 reference 末尾的那一帧删掉
-    /*if (h->param.b_IBC) {
-        int i = 0;
-        while (h->frames.reference[i] != NULL) i++;
-        h->frames.reference[i] = NULL;
-    }*/
-#endif
-
     return encoder_frame_end( thread_oldest, thread_current, pp_nal, pi_nal, pic_out );
 }
 
@@ -4713,6 +4714,14 @@ void    x264_encoder_close  ( x264_t *h )
                       SUM3( h->stat.f_psnr_average ) / duration,
                       calc_psnr( SUM3( h->stat.f_ssd_global ), duration * i_yuv_size ),
                       f_bitrate );
+#if BatResOutput
+            FILE* f_res = fopen("result.txt", "a");
+            fprintf(f_res,"%6.3f %6.3f %6.3f %.2f\n",
+                SUM3(h->stat.f_psnr_mean_y) / duration,
+                SUM3(h->stat.f_psnr_mean_u) / duration,
+                SUM3(h->stat.f_psnr_mean_v) / duration,
+                f_bitrate);
+#endif
         }
         else
             x264_log( h, X264_LOG_INFO, "kb/s:%.2f\n", f_bitrate );

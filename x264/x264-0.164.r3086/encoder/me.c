@@ -856,14 +856,22 @@ void x264_IBC_search_ref(x264_t* h, x264_me_t* m, int* p_halfpel_thresh)
          * the predicted motion vector.
          *
          * Disclaimer: this is a post-hoc rationalization for why this hack works. */
-        bcost = h->pixf.fpelcmp[i_pixel](p_fenc, FENC_STRIDE, &p_fref_w[bmy * stride + bmx], stride);
+        bcost = h->pixf.mbcmp[i_pixel](p_fenc, FENC_STRIDE, &p_fref_w[bmy * stride + bmx], stride);
 
         /* Same as above, except the condition is simpler. */
         if (pmv)
             COST_MV(0, 0);
     }
 
+    enum MEmethod
     {
+        DIA = 0,
+        HEX = 1,
+        FULL = 2
+    };
+    int method = FULL;
+
+    if (method == DIA) {
         /* diamond search, radius 1 */
         bcost <<= 4;
         int i = i_me_range;
@@ -882,6 +890,122 @@ void x264_IBC_search_ref(x264_t* h, x264_me_t* m, int* p_halfpel_thresh)
         } while (--i && CHECK_MVRANGE(bmx, bmy));
         bcost >>= 4;
     }
+    else if (method == HEX) {
+#if 1
+        for (int i = 0; i < i_me_range / 2; i++)
+        {
+            omx = bmx; omy = bmy;
+            COST_MV(omx - 2, omy);
+            COST_MV(omx - 1, omy + 2);
+            COST_MV(omx + 1, omy + 2);
+            COST_MV(omx + 2, omy);
+            COST_MV(omx + 1, omy - 2);
+            COST_MV(omx - 1, omy - 2);
+            if (bmx == omx && bmy == omy)
+                break;
+            if (!CHECK_MVRANGE(bmx, bmy))
+                break;
+        }
+#else
+        /* equivalent to the above, but eliminates duplicate candidates */
+
+        /* hexagon */
+        COST_MV_X3_DIR(-2, 0, -1, 2, 1, 2, costs);
+        COST_MV_X3_DIR(2, 0, 1, -2, -1, -2, costs + 4); /* +4 for 16-byte alignment */
+        bcost <<= 3;
+        COPY1_IF_LT(bcost, (costs[0] << 3) + 2);
+        COPY1_IF_LT(bcost, (costs[1] << 3) + 3);
+        COPY1_IF_LT(bcost, (costs[2] << 3) + 4);
+        COPY1_IF_LT(bcost, (costs[4] << 3) + 5);
+        COPY1_IF_LT(bcost, (costs[5] << 3) + 6);
+        COPY1_IF_LT(bcost, (costs[6] << 3) + 7);
+
+        if (bcost & 7)
+        {
+            int dir = (bcost & 7) - 2;
+            bmx += hex2[dir + 1][0];
+            bmy += hex2[dir + 1][1];
+
+            /* half hexagon, not overlapping the previous iteration */
+            for (int i = (i_me_range >> 1) - 1; i > 0 && CHECK_MVRANGE(bmx, bmy); i--)
+            {
+                COST_MV_X3_DIR(hex2[dir + 0][0], hex2[dir + 0][1],
+                    hex2[dir + 1][0], hex2[dir + 1][1],
+                    hex2[dir + 2][0], hex2[dir + 2][1],
+                    costs);
+                bcost &= ~7;
+                COPY1_IF_LT(bcost, (costs[0] << 3) + 1);
+                COPY1_IF_LT(bcost, (costs[1] << 3) + 2);
+                COPY1_IF_LT(bcost, (costs[2] << 3) + 3);
+                if (!(bcost & 7))
+                    break;
+                dir += (bcost & 7) - 2;
+                dir = mod6m1[dir + 1];
+                bmx += hex2[dir + 1][0];
+                bmy += hex2[dir + 1][1];
+            }
+        }
+        bcost >>= 3;
+#endif
+        /* square refine */
+        bcost <<= 4;
+        COST_MV_X4_DIR(0, -1, 0, 1, -1, 0, 1, 0, costs);
+        COPY1_IF_LT(bcost, (costs[0] << 4) + 1);
+        COPY1_IF_LT(bcost, (costs[1] << 4) + 2);
+        COPY1_IF_LT(bcost, (costs[2] << 4) + 3);
+        COPY1_IF_LT(bcost, (costs[3] << 4) + 4);
+        COST_MV_X4_DIR(-1, -1, -1, 1, 1, -1, 1, 1, costs);
+        COPY1_IF_LT(bcost, (costs[0] << 4) + 5);
+        COPY1_IF_LT(bcost, (costs[1] << 4) + 6);
+        COPY1_IF_LT(bcost, (costs[2] << 4) + 7);
+        COPY1_IF_LT(bcost, (costs[3] << 4) + 8);
+        bmx += square1[bcost & 15][0];
+        bmy += square1[bcost & 15][1];
+        bcost >>= 4;
+        }
+    else if (method == FULL) {
+#define COPY1_IF_LT_DJ(x,y,wid,col)\
+if( (y) < (x) )\
+    {(x) = (y);\
+    bestx = wid;\
+    besty = col;}
+
+        /* diamond search, radius 1 */
+        bcost <<= 4;
+        int i = i_me_range;
+        do
+        {
+            COST_MV_X4_DIR(0, -1, 0, 1, -1, 0, 1, 0, costs);
+            COPY1_IF_LT(bcost, (costs[0] << 4) + 1);    // 0001
+            COPY1_IF_LT(bcost, (costs[1] << 4) + 3);    // 0011
+            COPY1_IF_LT(bcost, (costs[2] << 4) + 4);    // 0100
+            COPY1_IF_LT(bcost, (costs[3] << 4) + 12);   // 1100
+            if (!(bcost & 15))
+                break;
+            bmx -= (int32_t)((uint32_t)bcost << 28) >> 30;
+            bmy -= (int32_t)((uint32_t)bcost << 30) >> 30;
+            bcost &= ~15;
+        } while (--i && CHECK_MVRANGE(bmx, bmy));
+        bcost >>= 4;
+
+        int x_max = h->mb.i_mb_x * 16;
+        int y_max = h->mb.i_mb_y * 16;
+        bmx = (x_max - 128 > 0) ? x_max - 128 : 0;
+        bmy = (y_max - 64 > 0) ? y_max - 64 : 0;
+        int bestx = bmx, besty = bmy;
+        for (int wid = 0; wid >= bmx - x_max; wid -= 2) {
+            for (int col = 0; col >= bmy - y_max; col -= 2) {
+                COST_MV_X4_DIR(wid, col, wid - 1, col, wid, col - 1, wid - 1, col - 1, costs);
+                COPY1_IF_LT_DJ(bcost, costs[0], wid, col);    // 0001
+                COPY1_IF_LT_DJ(bcost, costs[1], wid - 1, col);    // 0011
+                COPY1_IF_LT_DJ(bcost, costs[2], wid, col - 1);    // 0100
+                COPY1_IF_LT_DJ(bcost, costs[3], wid - 1, col - 1);   // 1100
+            }
+        }
+        bmx = bestx;
+        bmy = besty;
+    }
+    
 
     /* -> qpel mv */
     uint32_t bmv = pack16to32_mask(bmx, bmy);
@@ -901,12 +1025,12 @@ void x264_IBC_search_ref(x264_t* h, x264_me_t* m, int* p_halfpel_thresh)
     }
 
     /* subpel refine */
-    if (h->mb.i_subpel_refine >= 2)
+    /*if (h->mb.i_subpel_refine >= 2)
     {
         int hpel = subpel_iterations[h->mb.i_subpel_refine][2];
         int qpel = subpel_iterations[h->mb.i_subpel_refine][3];
         refine_subpel(h, m, hpel, qpel, p_halfpel_thresh, 0);
-    }
+    }*/
 }
 
 #endif

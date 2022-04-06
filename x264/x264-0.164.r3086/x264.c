@@ -1694,7 +1694,7 @@ generic_option:
 
 #if ReferenceFrameFixed
     // Avc2Code - ReferenceFramesCountFixed
-    param->i_frame_reference += param->b_IBC;
+    // param->i_frame_reference += param->b_IBC;
 #endif
 
     /* If first pass mode is used, apply faster settings. */
@@ -1708,6 +1708,9 @@ generic_option:
     /* Get the file name */
     FAIL_IF_ERROR( optind > argc - 1 || !output_filename, "No %s file. Run x264 --help for a list of options.\n",
                    optind > argc - 1 ? "input" : "output" );
+#if RecFrameOutput
+    param->output_file = output_filename;
+#endif
 
     if( select_output( muxer, output_filename, param ) )
         return -1;

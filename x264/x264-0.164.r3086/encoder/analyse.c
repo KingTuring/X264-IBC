@@ -1428,8 +1428,10 @@ static void mb_analyse_IBC_p16x16(x264_t* h, x264_mb_analysis_t* a)
     LOAD_FENC(&m, h->mb.pic.p_fenc, 0, 0);
 
     a->l0.me16x16.cost = INT_MAX;
-    int i_ref = h->sh.i_num_ref_idx_l0_active - 1;
+    //int i_ref = h->sh.i_num_ref_idx_l0_active - 1;
+    int i_ref = h->i_ref[0];
     //for (int i_ref = 0; i_ref < h->mb.pic.i_fref[0]; i_ref++)
+
     {
         m.i_ref_cost = REF_COST(0, i_ref);
         i_halfpel_thresh -= m.i_ref_cost;
@@ -1438,6 +1440,30 @@ static void mb_analyse_IBC_p16x16(x264_t* h, x264_mb_analysis_t* a)
         LOAD_WPELS(&m, h->mb.pic.p_fref_w[i_ref], 0, i_ref, 0, 0);
 
         x264_mb_predict_mv_16x16(h, 0, i_ref, m.mvp);
+
+        /*FILE* rec_pc = fopen("rec.yuv", "ab");
+        pixel* plane = h->fdec->plane[0];
+        for (int hei = 0; hei < h->param.i_height; ++hei) {
+            fwrite(plane, 1, h->fdec->i_width[0], rec_pc);
+            plane += h->fdec->i_stride[0];
+        }
+        pixel* cache_u = malloc(sizeof(pixel) * h->param.i_height * h->param.i_width);
+        pixel* cache_v = cache_u + h->param.i_height * h->param.i_width / 2;
+        plane = h->fdec->plane[1];
+        pixel* temp_u = cache_u, * temp_v = cache_v;
+        for (int hei = 0; hei < h->param.i_height / 2; ++hei) {
+            for (int wid = 0; wid < h->param.i_width; ++wid) {
+                temp_u[wid] = plane[2 * wid];
+                temp_v[wid] = plane[2 * wid + 1];
+            }
+            plane += h->fdec->i_stride[1];
+            temp_u += h->param.i_width / 2;
+            temp_v += h->param.i_width / 2;
+        }
+        fwrite(cache_u, 1, (h->param.i_width / 2) * (h->param.i_height / 2), rec_pc);
+        fwrite(cache_v, 1, (h->param.i_width / 2) * (h->param.i_height / 2), rec_pc);
+        fclose(rec_pc);*/
+
         x264_IBC_search_ref(h, &m,p_halfpel_thresh);
 
         /* save mv for predicting neighbors */
@@ -1469,16 +1495,19 @@ static void mb_analyse_IBC_p16x16(x264_t* h, x264_mb_analysis_t* a)
     x264_macroblock_cache_ref(h, 0, 0, 4, 4, 0, a->l0.me16x16.i_ref);
     assert(a->l0.me16x16.mv[1] <= h->mb.mv_max_spel[1] || h->i_thread_frames == 1);
 
-    // h->mb.i_type = P_L0;
-    //mb_init_fenc_cache(h, a->i_mbrd >= 2 || h->param.analyse.inter & X264_ANALYSE_PSUB8x8);
-    //if (a->l0.me16x16.i_ref == 0 && M32(a->l0.me16x16.mv) == M32(h->mb.cache.pskip_mv) && !a->b_force_intra)
-    //{
-    //h->mb.i_partition = D_16x16;
-    //x264_macroblock_cache_mv_ptr(h, 0, 0, 4, 4, 0, a->l0.me16x16.mv);
-    //a->l0.i_rd16x16 = rd_cost_mb(h, a->i_lambda2);
-    /*if (!(h->mb.i_cbp_luma | h->mb.i_cbp_chroma))
-        h->mb.i_type = P_SKIP;*/
-    //}
+    h->mb.i_type = P_L0;
+    if (a->i_mbrd)
+    {
+        mb_init_fenc_cache(h, a->i_mbrd >= 2 || h->param.analyse.inter & X264_ANALYSE_PSUB8x8);
+        //if (a->l0.me16x16.i_ref == 0 && M32(a->l0.me16x16.mv) == M32(h->mb.cache.pskip_mv) && !a->b_force_intra)
+        {
+            h->mb.i_partition = D_16x16;
+            x264_macroblock_cache_mv_ptr(h, 0, 0, 4, 4, 0, a->l0.me16x16.mv);
+            a->l0.i_rd16x16 = rd_cost_mb(h, a->i_lambda2);
+            //if (!(h->mb.i_cbp_luma | h->mb.i_cbp_chroma))
+            //    h->mb.i_type = P_SKIP;
+        }
+    }
 }
 #endif
 
@@ -3113,12 +3142,11 @@ void x264_macroblock_analyse( x264_t *h )
         //帧内预测分析  
         //从16×16的SAD,4个8×8的SAD和，16个4×4SAD中选出最优方式
         mb_analyse_intra( h, &analysis, COST_MAX );
-        if( analysis.i_mbrd )
-            intra_rd( h, &analysis, COST_MAX );
+        if (analysis.i_mbrd)
+            intra_rd(h, &analysis, COST_MAX);
             // 如果 i_mbrd > 0
             // 是要用 rdcost 来做最终的判断的
             // 那么就要真的调用一下 mb_encode 和 entropy_encode
-
         i_cost = analysis.i_satd_i16x16;
         h->mb.i_type = I_16x16;
         //如果I4x4或者I8x8开销更小的话就拷贝  
@@ -3128,8 +3156,8 @@ void x264_macroblock_analyse( x264_t *h )
         if( analysis.i_satd_pcm < i_cost )
             h->mb.i_type = I_PCM;
 
-        else if( analysis.i_mbrd >= 2 )
-            intra_rd_refine( h, &analysis );
+        else if (analysis.i_mbrd >= 2)
+            intra_rd_refine(h, &analysis);
 
         // 对于 i_mbrd
         // == 0 -> 只根据 SATD 来做判断
@@ -3137,12 +3165,15 @@ void x264_macroblock_analyse( x264_t *h )
         // == 2 -> 基于 SSD 的 RDO
 
 #if IntraBlockCopy_16_16
-        // avc2code - IntraBlockCopy_16_16
-        //int intra_rd_cost = rd_cost_mb(h, analysis.i_lambda2);
+// avc2code - IntraBlockCopy_16_16
+//int intra_rd_cost = rd_cost_mb(h, analysis.i_lambda2);
+
         if (h->param.b_IBC) {
+            int temp_type = h->mb.i_type;
             mb_analyse_load_costs(h, &analysis);
             mb_analyse_IBC_p16x16(h, &analysis);
-            COPY3_IF_LT(i_cost, analysis.l0.me16x16.cost, h->mb.i_type, P_L0, h->mb.i_partition, D_16x16);
+            //printf("loc:%4d, x:%3d, y:%3d ", h->mb.i_mb_xy, analysis.l0.me16x16.mv[0], analysis.l0.me16x16.mv[1]);
+            COPY3_IF_LT(analysis.l0.i_rd16x16, i_cost, h->mb.i_type, temp_type, h->mb.i_partition, D_16x16);
         }
 #endif
 
