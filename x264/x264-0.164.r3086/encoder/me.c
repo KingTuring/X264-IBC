@@ -232,14 +232,14 @@ void x264_me_search_ref( x264_t *h, x264_me_t *m, int16_t (*mvc)[2], int i_mvc, 
 
         // pmx pmy              整像素精度的 mvp
         // bpred_mx bpred_my    四分之一像素精度的 mvp
-        //COST_MV_HPEL( bpred_mx, bpred_my, bpred_cost );
-        do
+        COST_MV_HPEL( bpred_mx, bpred_my, bpred_cost );
+        /*do
         {
             intptr_t stride2 = 16;
             pixel *src = h->mc.get_ref( pix, &stride2, m->p_fref, stride, bpred_mx, bpred_my, bw, bh, &m->weight[0] );
             bpred_cost = h->pixf.fpelcmp[i_pixel]( p_fenc, FENC_STRIDE, src, stride2 )
                  + p_cost_mvx[ bpred_mx ] + p_cost_mvy[ bpred_my ];
-        } while (0);
+        } while (0);*/
 
         int pmv_cost = bpred_cost;
 

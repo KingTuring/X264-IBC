@@ -84,8 +84,8 @@ typedef struct
     ALIGNED_16( uint16_t i_satd_i8x8_dir[4][16] );
     int i_predict8x8[4];
 
-    int i_satd_i4x4;
-    int i_predict4x4[16];
+    int i_satd_i4x4;        // 采用 4*4 划分的时候， 总消耗的 satd
+    int i_predict4x4[16];   // 采用 4*4 划分的时候， 16个子块各自采用的预测模式
 
     int i_satd_pcm;
 
@@ -625,6 +625,8 @@ static void mb_analyse_intra_chroma( x264_t *h, x264_mb_analysis_t *a )
         }
         else
         {
+            // h->predict_16x16 存了 16*16 块对应的 7 个预测函数
+            // a->i_predict16x16 是 16*16 块选择的预测模式
             h->predict_16x16[a->i_predict16x16]( h->mb.pic.p_fdec[1] );
             h->predict_16x16[a->i_predict16x16]( h->mb.pic.p_fdec[2] );
         }
@@ -639,7 +641,10 @@ static void mb_analyse_intra_chroma( x264_t *h, x264_mb_analysis_t *a )
     /* Prediction selection for chroma */
     if( predict_mode[3] >= 0 && !h->mb.b_lossless )
     {
+        // 还是那个意思
+        // 如果四个模式都满足，就一起算
         int satdu[4], satdv[4];
+        // 色度的 四种预测模式
         h->pixf.intra_mbcmp_x3_chroma( h->mb.pic.p_fenc[1], h->mb.pic.p_fdec[1], satdu );
         h->pixf.intra_mbcmp_x3_chroma( h->mb.pic.p_fenc[2], h->mb.pic.p_fdec[2], satdv );
         h->predict_chroma[I_PRED_CHROMA_P]( h->mb.pic.p_fdec[1] );
@@ -652,6 +657,8 @@ static void mb_analyse_intra_chroma( x264_t *h, x264_mb_analysis_t *a )
             int i_mode = *predict_mode;
             int i_satd = satdu[i_mode] + satdv[i_mode] + a->i_lambda * bs_size_ue( i_mode );
 
+            // a->i_satd_chroma_dir[i_mode] 
+            // 存的是色度的 rdcost
             a->i_satd_chroma_dir[i_mode] = i_satd;
             COPY2_IF_LT( a->i_satd_chroma, i_satd, a->i_predict8x8chroma, i_mode );
         }
@@ -683,6 +690,7 @@ static void mb_analyse_intra_chroma( x264_t *h, x264_mb_analysis_t *a )
     }
 
     h->mb.i_chroma_pred_mode = a->i_predict8x8chroma;
+    // 最终选择的色度预测模式
 }
 
 /* FIXME: should we do any sort of merged chroma analysis with 4:4:4? */
@@ -945,16 +953,23 @@ static void mb_analyse_intra( x264_t *h, x264_mb_analysis_t *a, int i_satd_inter
                 /* emulate missing topright samples */
                 MPIXEL_X4( &p_dst_by[4 - FDEC_STRIDE] ) = PIXEL_SPLAT_X4( p_dst_by[3 - FDEC_STRIDE] );
 
+            // 9 个模式都可用的时候
             if( h->pixf.intra_mbcmp_x9_4x4 && predict_mode[8] >= 0 )
             {
                 /* No shortcuts here. The SSSE3 implementation of intra_mbcmp_x9 is fast enough. */
                 i_best = h->pixf.intra_mbcmp_x9_4x4( p_src_by, p_dst_by, cost_i4x4_mode-i_pred_mode );
                 i_cost += i_best & 0xffff;
                 i_best >>= 16;
+                // 这是 x264 的常见骚操作
+                // 后 16 位存 cost
+                // 前 16 位存 idx
                 a->i_predict4x4[idx] = i_best;
+                // 当 已经计算的 4*4 的块的 cost 已经很大了 或者 遍历完了
+                // 就跳出去
                 if( i_cost > i_satd_thresh || idx == 15 )
                     break;
                 h->mb.cache.intra4x4_pred_mode[x264_scan8[idx]] = i_best;
+                // i_best 存的是预测的模式
             }
             else
             {
@@ -1017,6 +1032,10 @@ static void mb_analyse_intra( x264_t *h, x264_mb_analysis_t *a, int i_satd_inter
             /* we need to encode this block now (for next ones) */
             x264_mb_encode_i4x4( h, 0, idx, a->i_qp, a->i_predict4x4[idx], 0 );
         }
+        // 如果 16 个块全部遍历完了
+        // 那么可以得到 4*4 划分下的 i_satd_i4x4
+        // 不然直接给他 COST_MAX
+        // 也就是不会选择 4*4 块划分
         if( idx == 15 )
         {
             a->i_satd_i4x4 = i_cost;
@@ -1039,6 +1058,11 @@ static void mb_analyse_intra( x264_t *h, x264_mb_analysis_t *a, int i_satd_inter
 
 static void intra_rd( x264_t *h, x264_mb_analysis_t *a, int i_satd_thresh )
 {
+    // 依旧是有一个 早-终止
+    // 如果不是早终止，就是 COST_MAX
+    // 早终止只是提前发现不可能选择的块
+    // 然后降低 运算复杂度
+    // 也就是 剪枝
     if( !a->b_early_terminate )
         i_satd_thresh = COST_MAX;
 
@@ -4063,7 +4087,11 @@ static void analyse_update_cache( x264_t *h, x264_mb_analysis_t *a  )
             mb_analyse_intra_chroma( h, a );
             break;
         case I_16x16:
+            // h->mb.i_intra16x16_pred_mode
+            // 存真的要编码的块的 16*16 的预测模式
             h->mb.i_intra16x16_pred_mode = a->i_predict16x16;
+            // 对于 I_16x16
+            // 是要进一步分析出来 色度的最佳预测模式
             mb_analyse_intra_chroma( h, a );
             break;
 

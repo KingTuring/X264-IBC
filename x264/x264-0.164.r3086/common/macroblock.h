@@ -222,6 +222,9 @@ static const uint8_t block_idx_yx_1d[16] =
 {
     0, 4, 1, 5, 8, 12, 9, 13, 2, 6, 3, 7, 10, 14, 11, 15
 };
+
+// 用于 16 * 16 的子块划分确定 像素起始位置
+// 这玩意儿 还是用的Z扫描
 static const uint8_t block_idx_xy_fenc[16] =
 {
     0*4 + 0*4*FENC_STRIDE, 1*4 + 0*4*FENC_STRIDE,
@@ -424,6 +427,8 @@ static ALWAYS_INLINE int x264_mb_predict_intra4x4_mode( x264_t *h, int idx )
     const int m  = X264_MIN( x264_mb_pred_mode4x4_fix(ma),
                              x264_mb_pred_mode4x4_fix(mb) );
 
+    // m < 0 就是 a b 都不可用
+    // 这个时候当成 dc 来编
     if( m < 0 )
         return I_PRED_4x4_DC;
 
