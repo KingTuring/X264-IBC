@@ -192,10 +192,13 @@ void x264_me_search_ref( x264_t *h, x264_me_t *m, int16_t (*mvc)[2], int i_mvc, 
     pixel *p_fenc = m->p_fenc[0];
     pixel *p_fref_w = m->p_fref_w;
     ALIGNED_ARRAY_32( pixel, pix,[16*16] );
+    // 开辟的 pix 空间，是用来暂存
+    // 缓存帧中，搜索到的 参考块的 参考像素的
     ALIGNED_ARRAY_8( int16_t, mvc_temp,[16],[2] );
 
     ALIGNED_ARRAY_16( int, costs,[16] );
 
+    /* Fullpel MV range for motion search */
     int mv_x_min = h->mb.mv_limit_fpel[0][0];
     int mv_y_min = h->mb.mv_limit_fpel[0][1];
     int mv_x_max = h->mb.mv_limit_fpel[1][0];
@@ -219,12 +222,25 @@ void x264_me_search_ref( x264_t *h, x264_me_t *m, int16_t (*mvc)[2], int i_mvc, 
     {
         /* Calculate and check the MVP first */
         int bpred_mx = x264_clip3( m->mvp[0], SPEL(mv_x_min), SPEL(mv_x_max) );
+        // SPEL(mv_x_min) 相当于 mv_x_min*4
         int bpred_my = x264_clip3( m->mvp[1], SPEL(mv_y_min), SPEL(mv_y_max) );
         pmv = pack16to32_mask( bpred_mx, bpred_my );
         pmx = FPEL( bpred_mx );
+        // #define FPEL(mv) (((mv)+2)>>2)
+        // pmx = bpred_mx / 4
         pmy = FPEL( bpred_my );
 
-        COST_MV_HPEL( bpred_mx, bpred_my, bpred_cost );
+        // pmx pmy              整像素精度的 mvp
+        // bpred_mx bpred_my    四分之一像素精度的 mvp
+        //COST_MV_HPEL( bpred_mx, bpred_my, bpred_cost );
+        do
+        {
+            intptr_t stride2 = 16;
+            pixel *src = h->mc.get_ref( pix, &stride2, m->p_fref, stride, bpred_mx, bpred_my, bw, bh, &m->weight[0] );
+            bpred_cost = h->pixf.fpelcmp[i_pixel]( p_fenc, FENC_STRIDE, src, stride2 )
+                 + p_cost_mvx[ bpred_mx ] + p_cost_mvy[ bpred_my ];
+        } while (0);
+
         int pmv_cost = bpred_cost;
 
         if( i_mvc > 0 )
@@ -970,28 +986,10 @@ if( (y) < (x) )\
     bestx = wid;\
     besty = col;}
 
-        /* diamond search, radius 1 */
-        bcost <<= 4;
-        int i = i_me_range;
-        do
-        {
-            COST_MV_X4_DIR(0, -1, 0, 1, -1, 0, 1, 0, costs);
-            COPY1_IF_LT(bcost, (costs[0] << 4) + 1);    // 0001
-            COPY1_IF_LT(bcost, (costs[1] << 4) + 3);    // 0011
-            COPY1_IF_LT(bcost, (costs[2] << 4) + 4);    // 0100
-            COPY1_IF_LT(bcost, (costs[3] << 4) + 12);   // 1100
-            if (!(bcost & 15))
-                break;
-            bmx -= (int32_t)((uint32_t)bcost << 28) >> 30;
-            bmy -= (int32_t)((uint32_t)bcost << 30) >> 30;
-            bcost &= ~15;
-        } while (--i && CHECK_MVRANGE(bmx, bmy));
-        bcost >>= 4;
-
         int x_max = h->mb.i_mb_x * 16;
         int y_max = h->mb.i_mb_y * 16;
-        bmx = (x_max - 128 > 0) ? x_max - 128 : 0;
-        bmy = (y_max - 64 > 0) ? y_max - 64 : 0;
+        bmx = (x_max - 256 > 0) ? x_max - 256 : 0;
+        bmy = (y_max - 256 > 0) ? y_max - 256 : 0;
         int bestx = bmx, besty = bmy;
         for (int wid = 0; wid >= bmx - x_max; wid -= 2) {
             for (int col = 0; col >= bmy - y_max; col -= 2) {

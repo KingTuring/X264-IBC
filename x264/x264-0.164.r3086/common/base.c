@@ -702,7 +702,7 @@ static int param_apply_tune( x264_param_t *param, const char *tune )
             // avc2code - CommandLineSet
             //if (psy_tuning_used++) goto psy_failure;
             //param->rc.i_aq_mode = X264_AQ_NONE;
-            param->analyse.b_psy = 0;
+            //param->analyse.b_psy = 0;
 #endif // #if Avc2CommandLine
         }
         else if( len == 6 && !strncasecmp( tune, "touhou", 6 ) )

@@ -1315,12 +1315,19 @@ static void mb_analyse_inter_p16x16( x264_t *h, x264_mb_analysis_t *a )
     x264_me_t m;
     int i_mvc;
     ALIGNED_ARRAY_8( int16_t, mvc,[8],[2] );
+    // 这是一个单纯的 8 比特对齐宏替换
+    // 相当于 
+    // __declspec(align(8)) int16_t mvc[8][2];
     int i_halfpel_thresh = INT_MAX;
     int *p_halfpel_thresh = (a->b_early_terminate && h->mb.pic.i_fref[0]>1) ? &i_halfpel_thresh : NULL;
 
     /* 16x16 Search on all ref frame */
     m.i_pixel = PIXEL_16x16;
     LOAD_FENC( &m, h->mb.pic.p_fenc, 0, 0 );
+
+    // a->p_cost_mv;        编码 mv 的 cost
+    // h->mb.pic.i_stride;  fenc_plane 的 stride
+    // h->mb.pic.p_fenc;    fenc_buffer 中当前 CU 的地址
 
     a->l0.me16x16.cost = INT_MAX;
     // h->mb.pic.i_fref[0]
@@ -1337,7 +1344,43 @@ static void mb_analyse_inter_p16x16( x264_t *h, x264_mb_analysis_t *a )
         // pixel* p_fref_w;
         // pixel* p_fenc[3];
         // 也就是从 h->mb->pic 给 x264_me_t 赋值
-        LOAD_HPELS( &m, h->mb.pic.p_fref[0][i_ref], 0, i_ref, 0, 0 );
+        // LOAD_HPELS( &m, h->mb.pic.p_fref[0][i_ref], 0, i_ref, 0, 0 );
+
+        int list = 0; 
+        int ref = i_ref;
+        int xoff = 0;
+        int yoff = 0; 
+        { 
+            pixel** src = h->mb.pic.p_fref[0][i_ref];
+            (&m)->p_fref_w = (&m)->p_fref[0] = &(src)[0][(xoff)+(yoff) * (&m)->i_stride[0]];
+            if (h->param.analyse.i_subpel_refine) \
+            { 
+                (&m)->p_fref[1] = &(src)[1][(xoff)+(yoff) * (&m)->i_stride[0]]; 
+                (&m)->p_fref[2] = &(src)[2][(xoff)+(yoff) * (&m)->i_stride[0]]; 
+                (&m)->p_fref[3] = &(src)[3][(xoff)+(yoff) * (&m)->i_stride[0]]; 
+            } 
+                if (CHROMA444) 
+                { 
+                    (&m)->p_fref[4] = &(src)[4][(xoff)+(yoff) * (&m)->i_stride[1]];
+                    (&m)->p_fref[8] = &(src)[8][(xoff)+(yoff) * (&m)->i_stride[2]];
+                    if (h->param.analyse.i_subpel_refine) 
+                    { 
+                        (&m)->p_fref[5] = &(src)[5][(xoff)+(yoff) * (&m)->i_stride[1]];
+                        (&m)->p_fref[6] = &(src)[6][(xoff)+(yoff) * (&m)->i_stride[1]];
+                        (&m)->p_fref[7] = &(src)[7][(xoff)+(yoff) * (&m)->i_stride[1]];
+                        (&m)->p_fref[9] = &(src)[9][(xoff)+(yoff) * (&m)->i_stride[2]];
+                        (&m)->p_fref[10] = &(src)[10][(xoff)+(yoff) * (&m)->i_stride[2]];
+                        (&m)->p_fref[11] = &(src)[11][(xoff)+(yoff) * (&m)->i_stride[2]];
+                    } 
+                } 
+                else if (CHROMA_FORMAT) 
+                    (&m)->p_fref[4] = &(src)[4][(xoff)+((yoff) >> CHROMA_V_SHIFT) * (&m)->i_stride[1]];
+                    if (h->param.analyse.i_me_method >= X264_ME_ESA) 
+                        (&m)->integral = &h->mb.pic.p_integral[list][ref][(xoff)+(yoff) * (&m)->i_stride[0]];
+                        (&m)->weight = x264_weight_none;
+                        (&m)->i_ref = ref;
+        }
+
         LOAD_WPELS( &m, h->mb.pic.p_fref_w[i_ref], 0, i_ref, 0, 0 );
 
         x264_mb_predict_mv_16x16( h, 0, i_ref, m.mvp );
@@ -3299,6 +3342,8 @@ skip_analysis:
                 return;
             }
 
+            //dj
+            h->param.analyse.b_mixed_references = 0;
             if( flags & X264_ANALYSE_PSUB16x16 )
             {
                 if( h->param.analyse.b_mixed_references )
