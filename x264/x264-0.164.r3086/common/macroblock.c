@@ -661,8 +661,8 @@ static ALWAYS_INLINE void macroblock_load_pic_pointers( x264_t *h, int mb_x, int
         }
         else
         {
-            plane_src = h->fref[0][j]->plane[i];
-            filtered_src = h->fref[0][j]->filtered[i];
+            plane_src = h->fref[0][j]->plane[i];        // 这里存放的是原平面
+            filtered_src = h->fref[0][j]->filtered[i];  // 这里存放的是插值平面
         }
         h->mb.pic.p_fref[0][j][i*4] = plane_src + ref_pix_offset[j&1];
 

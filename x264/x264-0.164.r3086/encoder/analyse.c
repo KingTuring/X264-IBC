@@ -250,7 +250,7 @@ void x264_analyse_weight_frame( x264_t *h, int end )
 /* initialize an array of lambda*nbits for all possible mvs */
 static void mb_analyse_load_costs( x264_t *h, x264_mb_analysis_t *a )
 {
-    a->p_cost_mv = h->cost_mv[a->i_qp];
+    a->p_cost_mv = h->cost_mv[a->i_qp];     // cost_mv 一共有 70 个
     // 编码 QP 的 cost
     a->p_cost_ref[0] = h->cost_table->ref[a->i_qp][x264_clip3(h->sh.i_num_ref_idx_l0_active-1,0,2)];
     a->p_cost_ref[1] = h->cost_table->ref[a->i_qp][x264_clip3(h->sh.i_num_ref_idx_l1_active-1,0,2)];
@@ -1377,7 +1377,7 @@ static void mb_analyse_inter_p16x16( x264_t *h, x264_mb_analysis_t *a )
         { 
             pixel** src = h->mb.pic.p_fref[0][i_ref];
             (&m)->p_fref_w = (&m)->p_fref[0] = &(src)[0][(xoff)+(yoff) * (&m)->i_stride[0]];
-            if (h->param.analyse.i_subpel_refine) \
+            if (h->param.analyse.i_subpel_refine) 
             { 
                 (&m)->p_fref[1] = &(src)[1][(xoff)+(yoff) * (&m)->i_stride[0]]; 
                 (&m)->p_fref[2] = &(src)[2][(xoff)+(yoff) * (&m)->i_stride[0]]; 
@@ -1435,6 +1435,10 @@ static void mb_analyse_inter_p16x16( x264_t *h, x264_mb_analysis_t *a )
         // skip 默认：
         // 第 0 号 参考帧
         // m.cost-m.cost_mv < 300*a->i_lambda
+
+        // 这个是比较精细的 skip 判断
+        // 就是真的在 i_ref == 0 这一帧进行了搜索
+        // 然后看一下他的 cost 和 mvd
         if( i_ref == 0
             && a->b_try_skip
             && m.cost-m.cost_mv < 300*a->i_lambda
@@ -1575,9 +1579,9 @@ static void mb_analyse_IBC_p16x16(x264_t* h, x264_mb_analysis_t* a)
             //    h->mb.i_type = P_SKIP;
         }
     }
+
 }
 #endif
-
 
 static void mb_analyse_inter_p8x8_mixed_ref( x264_t *h, x264_mb_analysis_t *a )
 {
@@ -2353,6 +2357,107 @@ static inline void mb_cache_mv_p8x8( x264_t *h, x264_mb_analysis_t *a, int i )
             break;
     }
 }
+
+#if IntraBlockCopy_8_8
+static void rd_ibc_IBC_p8x8(x264_t* h, x264_mb_analysis_t* a) {
+    h->mb.i_type = P_8x8;
+    h->mb.i_partition = D_8x8;
+    if (h->param.analyse.inter & X264_ANALYSE_PSUB8x8)
+    {
+        x264_macroblock_cache_ref(h, 0, 0, 2, 2, 0, a->l0.me8x8[0].i_ref);
+        x264_macroblock_cache_ref(h, 2, 0, 2, 2, 0, a->l0.me8x8[1].i_ref);
+        x264_macroblock_cache_ref(h, 0, 2, 2, 2, 0, a->l0.me8x8[2].i_ref);
+        x264_macroblock_cache_ref(h, 2, 2, 2, 2, 0, a->l0.me8x8[3].i_ref);
+        /* FIXME: In the 8x8 blocks where RDO isn't run, the NNZ values used for context selection
+         * for future blocks are those left over from previous RDO calls. */
+        for (int i = 0; i < 4; i++)
+        {
+            int costs[4] = { a->l0.i_cost4x4[i], a->l0.i_cost8x4[i], a->l0.i_cost4x8[i], a->l0.me8x8[i].cost };
+            int sub8x8_thresh = a->b_early_terminate ? X264_MIN4(costs[0], costs[1], costs[2], costs[3]) * 5 / 4 : COST_MAX;
+            int subtype, btype = D_L0_8x8;
+            uint64_t bcost = COST_MAX64;
+            for (subtype = D_L0_4x4; subtype <= D_L0_8x8; subtype++)
+            {
+                uint64_t cost;
+                if (costs[subtype] > sub8x8_thresh)
+                    continue;
+                h->mb.i_sub_partition[i] = subtype;
+                mb_cache_mv_p8x8(h, a, i);
+                if (subtype == btype)
+                    continue;
+                cost = x264_rd_cost_part(h, a->i_lambda2, i << 2, PIXEL_8x8);
+                COPY2_IF_LT(bcost, cost, btype, subtype);
+            }
+            if (h->mb.i_sub_partition[i] != btype)
+            {
+                h->mb.i_sub_partition[i] = btype;
+                mb_cache_mv_p8x8(h, a, i);
+            }
+        }
+    }
+    else
+        analyse_update_cache(h, a);
+    a->l0.i_cost8x8 = rd_cost_mb(h, a->i_lambda2);
+};
+
+static void mb_analyse_IBC_p8x8(x264_t* h, x264_mb_analysis_t* a)
+{
+    /* Duplicate refs are rarely useful in p8x8 due to the high cost of the
+     * reference frame flags.  Thus, if we're not doing mixedrefs, just
+     * don't bother analysing the dupes. */
+    const int i_ref = a->l0.me16x16.i_ref;
+    const int i_ref_cost = h->param.b_cabac || i_ref ? REF_COST(0, i_ref) : 0;
+    pixel** p_fenc = h->mb.pic.p_fenc;
+    int i_mvc;
+    int16_t(*mvc)[2] = a->l0.mvc[i_ref];
+
+    /* XXX Needed for x264_mb_predict_mv */
+    h->mb.i_partition = D_8x8;
+
+    i_mvc = 1;
+    CP32(mvc[0], a->l0.me16x16.mv);
+
+    for (int i = 0; i < 4; i++)
+    {
+        x264_me_t* m = &a->l0.me8x8[i];
+        int x8 = i & 1;
+        int y8 = i >> 1;
+
+        m->i_pixel = PIXEL_8x8;
+        m->i_ref_cost = i_ref_cost;
+
+        LOAD_FENC(m, p_fenc, 8 * x8, 8 * y8);
+        LOAD_HPELS(m, h->mb.pic.p_fref[0][i_ref], 0, i_ref, 8 * x8, 8 * y8);
+        LOAD_WPELS(m, h->mb.pic.p_fref_w[i_ref], 0, i_ref, 8 * x8, 8 * y8);
+
+        x264_mb_predict_mv(h, 0, 4 * i, 2, m->mvp);
+        x264_IBC_search_ref(h, m, COST_MAX);
+        //x264_me_search(h, m, mvc, i_mvc);
+
+        x264_macroblock_cache_mv_ptr(h, 2 * x8, 2 * y8, 2, 2, 0, m->mv);
+
+        CP32(mvc[i_mvc], m->mv);
+        i_mvc++;
+
+        a->i_satd8x8[0][i] = m->cost - m->cost_mv;
+
+        /* mb type cost */
+        m->cost += i_ref_cost;
+        if (!h->param.b_cabac || (h->param.analyse.inter & X264_ANALYSE_PSUB8x8))
+            m->cost += a->i_lambda * i_sub_mb_p_cost_table[D_L0_8x8];
+    }
+
+    a->l0.i_cost8x8 = a->l0.me8x8[0].cost + a->l0.me8x8[1].cost +
+        a->l0.me8x8[2].cost + a->l0.me8x8[3].cost;
+    /* theoretically this should include 4*ref_cost,
+     * but 3 seems a better approximation of cabac. */
+    if (h->param.b_cabac)
+        a->l0.i_cost8x8 -= i_ref_cost;
+    M32(h->mb.i_sub_partition) = D_L0_8x8 * 0x01010101;
+
+    rd_ibc_IBC_p8x8(h, a);
+}
+#endif
 
 static void mb_load_mv_direct8x8( x264_t *h, int idx )
 {
@@ -3236,17 +3341,34 @@ void x264_macroblock_analyse( x264_t *h )
 //int intra_rd_cost = rd_cost_mb(h, analysis.i_lambda2);
 
         if (h->param.b_IBC) {
+            // 16x16_IBC
             int temp_type = h->mb.i_type;
             mb_analyse_load_costs(h, &analysis);
             mb_analyse_IBC_p16x16(h, &analysis);
             //printf("loc:%4d, x:%3d, y:%3d ", h->mb.i_mb_xy, analysis.l0.me16x16.mv[0], analysis.l0.me16x16.mv[1]);
-            COPY3_IF_LT(analysis.l0.i_rd16x16, i_cost, h->mb.i_type, temp_type, h->mb.i_partition, D_16x16);
+            // 8x8_IBC
+            mb_analyse_IBC_p8x8(h, &analysis);
+
+            int i_type = P_L0;
+            int i_partition = D_16x16;
+            i_cost = analysis.l0.i_rd16x16;
+            COPY3_IF_LT(i_cost, analysis.l0.i_cost8x8, h->mb.i_type, P_8x8, h->mb.i_partition, D_8x8);
+            COPY2_IF_LT(i_cost, analysis.i_satd_i16x16, h->mb.i_type, I_16x16);
+            COPY2_IF_LT(i_cost, analysis.i_satd_i8x8, h->mb.i_type, I_8x8);
+            COPY2_IF_LT(i_cost, analysis.i_satd_i4x4, h->mb.i_type, I_4x4);
         }
 #endif
 
     }
     else if( h->sh.i_type == SLICE_TYPE_P )
     {
+        //dj
+        /*h->mb.i_type = P_SKIP;
+        h->mb.i_partition = D_16x16;
+        for (int i = 0; i < h->mb.pic.i_fref[0]; i++)
+            M32(h->mb.mvr[0][i][h->mb.i_mb_xy]) = 0;
+        return;*/
+
         int b_skip = 0;
 
         // 这段汇编代码，暂时还没有看懂
@@ -3328,6 +3450,10 @@ void x264_macroblock_analyse( x264_t *h )
         // 这个函数出现的第二次
         // 这一次， 最后一个参数是 1
 
+        // 精细程度最低的 skip 判断
+        // 1. 到目前为止，如果精细度很低，就直接用 h->mb.cache.pskip_mv 做运动补偿，并且进行残差编码
+        // 然后按照 nz 进行快速判断
+        // 2. 又或者是，当前块超出了范围
         if( b_skip )
         {
             h->mb.i_type = P_SKIP;
@@ -3361,15 +3487,21 @@ skip_analysis:
 
             if( h->mb.i_type == P_SKIP )
             {
+                // 所以 对于 P_SKIP 的块
+                // 什么都不需要编码
+                // 这个在码流上也看得出
+                // 因为只是编码了一个 SKIP 数量
                 for( int i = 1; i < h->mb.pic.i_fref[0]; i++ )
                     M32( h->mb.mvr[0][i][h->mb.i_mb_xy] ) = 0;
                 return;
             }
 
             //dj
-            h->param.analyse.b_mixed_references = 0;
+            //h->param.analyse.b_mixed_references = 0;
+            // 这里完成 8*8 的帧间
             if( flags & X264_ANALYSE_PSUB16x16 )
             {
+                // 是否允许每个 mb 参考不同的帧
                 if( h->param.analyse.b_mixed_references )
                     mb_analyse_inter_p8x8_mixed_ref( h, &analysis );
                 else
@@ -3382,8 +3514,14 @@ skip_analysis:
             i_partition = D_16x16;
             i_cost = analysis.l0.me16x16.cost;
 
+            // 如果是 早-终止 
+            // 这里就会有选择性的 进行 8*8 的划分决策
+            // 如果不是 早-终止
+            // 8*8 的进一步划分也需要进行
             if( ( flags & X264_ANALYSE_PSUB16x16 ) && (!analysis.b_early_terminate ||
                 analysis.l0.i_cost8x8 < analysis.l0.me16x16.cost) )
+                // 如果 8*8 划分 优于 16*16
+                // 那么就进行更精细的划分
             {
                 i_type = P_8x8;
                 i_partition = D_8x8;
@@ -3450,6 +3588,9 @@ skip_analysis:
 
             /* refine qpel */
             //FIXME mb_type costs?
+            // 如果不是精细搜索的话
+            // 那就对刚刚选择到的块进行 cost 的 refine
+            // 不然的话，就在后续过程中，对所有的都进行 refine
             if( analysis.i_mbrd || !h->mb.i_subpel_refine )
             {
                 /* refine later */
@@ -3512,6 +3653,8 @@ skip_analysis:
                 }
             }
 
+            // 如果进行了色度的运动估计
+            // 那么对应帧内的模式选择也要做一下色度分量的
             if( h->mb.b_chroma_me )
             {
                 if( CHROMA444 )
@@ -3536,6 +3679,8 @@ skip_analysis:
                                       analysis.i_satd_i8x8,
                                       analysis.i_satd_i4x4 );
 
+            // 如果 i_mbrd > 0
+            // 帧内和帧间分别做一下真实的 rd 计算
             if( analysis.i_mbrd )
             {
                 mb_analyse_p_rd( h, &analysis, X264_MIN(i_satd_inter, i_satd_intra) );
@@ -3582,6 +3727,10 @@ skip_analysis:
                 goto intra_analysis;
             }
 
+            // 这个时候已经选定了模式
+            // 只是再精细的确定一下模式信息
+            // 帧内的话就是确定下 最佳划分模式下 哪种预测模式
+            // 帧间就是
             if( analysis.i_mbrd >= 2 && h->mb.i_type != I_PCM )
             {
                 if( IS_INTRA( h->mb.i_type ) )
@@ -4072,6 +4221,12 @@ skip_analysis:
 /*-------------------- Update MB from the analysis ----------------------*/
 static void analyse_update_cache( x264_t *h, x264_mb_analysis_t *a  )
 {
+    // 每次确定了编码模式之后
+    // 要更新 mb 的 cache 信息
+    // 对于 帧内模式
+    // 需要更新 划分模式下的 最终的 预测模式选择
+    // 对于 帧间模式
+    // 主要是更新 每个块的 参考帧号 和 每个块的 mv
     switch( h->mb.i_type )
     {
         case I_4x4:
@@ -4099,6 +4254,8 @@ static void analyse_update_cache( x264_t *h, x264_mb_analysis_t *a  )
             break;
 
         case P_L0:
+            // 对于 P_L0 和 P_8*8
+            // 需要更新的缓存有 cache_ref 和 mv
             switch( h->mb.i_partition )
             {
                 case D_16x16:
@@ -4137,6 +4294,9 @@ static void analyse_update_cache( x264_t *h, x264_mb_analysis_t *a  )
 
         case P_SKIP:
         {
+            // 对于 P_SKIP
+            // i_ref 更新成 0
+            // mv 更新成 mvp
             h->mb.i_partition = D_16x16;
             x264_macroblock_cache_ref( h, 0, 0, 4, 4, 0, 0 );
             x264_macroblock_cache_mv_ptr( h, 0, 0, 4, 4, 0, h->mb.cache.pskip_mv );

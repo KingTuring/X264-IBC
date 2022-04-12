@@ -1,6 +1,6 @@
 #pragma once
 
-#define Avc2CodeValid 1
+#define Avc2CodeValid 0
 
 #if Avc2CodeValid
 
@@ -11,6 +11,7 @@
 #define SpsFixed 0
 #define DecFrameFixed 1
 #define IntraBlockCopy_16_16 1
+#define IntraBlockCopy_8_8 1
 #define Avc2CliLog 1
 #define RecFrameOutput 1
 #define BatResOutput 1
@@ -24,8 +25,9 @@
 #define SpsFixed 0
 #define DecFrameFixed 0
 #define IntraBlockCopy_16_16 0
+#define IntraBlockCopy_8_8 0
 #define Avc2CliLog 0
-#define RecFrameOutput 1
-#define BatResOutput 1
+#define RecFrameOutput 0
+#define BatResOutput 0
 
 #endif

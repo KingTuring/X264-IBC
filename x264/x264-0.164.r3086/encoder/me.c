@@ -988,18 +988,31 @@ if( (y) < (x) )\
 
         int x_max = h->mb.i_mb_x * 16;
         int y_max = h->mb.i_mb_y * 16;
-        bmx = (x_max - 256 > 0) ? x_max - 256 : 0;
-        bmy = (y_max - 256 > 0) ? y_max - 256 : 0;
+        //bmx = (x_max - 128 > 0) ? x_max - 64 : 0;
+        //bmy = (y_max - 128 > 0) ? y_max - 64 : 0;
+        bmx = 0;
+        bmy = 0;
         int bestx = bmx, besty = bmy;
-        for (int wid = 0; wid >= bmx - x_max; wid -= 2) {
-            for (int col = 0; col >= bmy - y_max; col -= 2) {
-                COST_MV_X4_DIR(wid, col, wid - 1, col, wid, col - 1, wid - 1, col - 1, costs);
+
+        for (int wid = bmx - x_max; wid < 0; wid += 2) {
+            for (int col = bmy - y_max ; col < 0; col += 2) {
+                COST_MV_X4_DIR(wid, col, wid + 1, col, wid, col + 1, wid + 1, col + 1, costs);
                 COPY1_IF_LT_DJ(bcost, costs[0], wid, col);    // 0001
-                COPY1_IF_LT_DJ(bcost, costs[1], wid - 1, col);    // 0011
-                COPY1_IF_LT_DJ(bcost, costs[2], wid, col - 1);    // 0100
-                COPY1_IF_LT_DJ(bcost, costs[3], wid - 1, col - 1);   // 1100
+                COPY1_IF_LT_DJ(bcost, costs[1], wid + 1, col);    // 0011
+                COPY1_IF_LT_DJ(bcost, costs[2], wid, col + 1);    // 0100
+                COPY1_IF_LT_DJ(bcost, costs[3], wid + 1, col + 1);   // 1100
             }
         }
+
+        //for (int wid = 0; wid >= bmx - x_max; wid -= 2) {
+        //    for (int col = 0; col >= bmy - y_max; col -= 2) {
+        //        COST_MV_X4_DIR(wid, col, wid - 1, col, wid, col - 1, wid - 1, col - 1, costs);
+        //        COPY1_IF_LT_DJ(bcost, costs[0], wid, col);    // 0001
+        //        COPY1_IF_LT_DJ(bcost, costs[1], wid - 1, col);    // 0011
+        //        COPY1_IF_LT_DJ(bcost, costs[2], wid, col - 1);    // 0100
+        //        COPY1_IF_LT_DJ(bcost, costs[3], wid - 1, col - 1);   // 1100
+        //    }
+        //}
         bmx = bestx;
         bmy = besty;
     }

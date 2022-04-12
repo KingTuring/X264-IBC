@@ -191,6 +191,7 @@ static void mb_encode_i16x16( x264_t *h, int p, int i_qp )
             if( nz )
             {
                 block_cbp = 0xf;
+
                 FOREACH_BIT( idx, i8x8*4, nz )
                 {
                     h->zigzagf.scan_4x4( h->dct.luma4x4[16*p+idx], dct4x4[idx] );

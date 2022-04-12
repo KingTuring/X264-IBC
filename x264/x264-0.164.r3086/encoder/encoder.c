@@ -596,6 +596,8 @@ static int validate_parameters( x264_t *h, int b_open )
         h->param.i_lookahead_threads = 1;
     }
     h->i_thread_frames = h->param.b_sliced_threads ? 1 : h->param.i_threads;
+    // 如果使用基于 slice 的线程，i_thread_frames 就是 1
+    // 不使用 就是 i_threads 线程数
     if( h->i_thread_frames > 1 )
         h->param.nalu_process = NULL;
 
@@ -2465,8 +2467,8 @@ static inline void reference_build_list( x264_t *h, int i_poc )
 static void fdec_filter_row( x264_t *h, int mb_y, int pass )
 {
     /* mb_y is the mb to be encoded next, not the mb to be filtered here */
-    int b_hpel = h->fdec->b_kept_as_ref;
-    int b_deblock = h->sh.i_disable_deblocking_filter_idc != 1;
+    int b_hpel = h->fdec->b_kept_as_ref;                            // 需要作为参考帧，才会进行半像素插值
+    int b_deblock = h->sh.i_disable_deblocking_filter_idc != 1;     
     int b_end = mb_y == h->i_threadslice_end;
     int b_measure_quality = 1;
     int min_y = mb_y - (1 << SLICE_MBAFF);
@@ -2475,7 +2477,10 @@ static void fdec_filter_row( x264_t *h, int mb_y, int pass )
      * above each MB, as bS=4 doesn't happen for the top of interlaced mbpairs. */
     int minpix_y = min_y*16 - 4 * !b_start;
     int maxpix_y = mb_y*16 - 4 * !b_end;
+    // 有半像素才会做 去块效应滤波
     b_deblock &= b_hpel || h->param.b_full_recon || h->param.psz_dump_yuv;
+
+    // 多线程的时候，才会分开处理
     if( h->param.b_sliced_threads )
     {
         switch( pass )
@@ -3599,6 +3604,8 @@ int     x264_encoder_encode( x264_t *h,
     // lookahead 处理完了是要送到 current 进行编码的
     // 如果是空的，那么需要去 lookahead 里面拿一帧出来
 
+    //printf("aq: %d", h->param.rc.i_aq_mode);
+
     if( !h->frames.current[0] && x264_lookahead_is_empty( h ) )
         return encoder_frame_end( thread_oldest, thread_current, pp_nal, pi_nal, pic_out );
         // 第 2 次 return
@@ -4061,10 +4068,15 @@ int     x264_encoder_encode( x264_t *h,
         overhead += h->out.nal[h->out.i_nal-1].i_payload + h->out.nal[h->out.i_nal-1].i_padding + SEI_OVERHEAD;
     }
 
+    //static int64_t time = 0;
     /* Init the rate control */
     /* FIXME: Include slice header bit cost. */
+    //int64_t i_start1 = x264_mdate();
     x264_ratecontrol_start( h, h->fenc->i_qpplus1, overhead*8 );
     i_global_qp = x264_ratecontrol_qp( h );
+    //int64_t i_end1 = x264_mdate();
+    //time += (i_end1 - i_start1);
+    //fprintf(stderr, "encode time %.3f s\n", (double)(time));
 
     pic_out->i_qpplus1 =
     h->fdec->i_qpplus1 = i_global_qp + 1;

@@ -167,6 +167,8 @@ static void mc_copy( pixel *src, intptr_t i_src_stride, pixel *dst, intptr_t i_d
     }
 }
 
+// 确确实实是六抽头滤波器
+// 滤波器系数是： 1 -5 20 20 -5 1
 #define TAPFILTER(pix, d) ((pix)[x-2*d] + (pix)[x+3*d] - 5*((pix)[x-d] + (pix)[x+2*d]) + 20*((pix)[x] + (pix)[x+d]))
 static void hpel_filter( pixel *dsth, pixel *dstv, pixel *dstc, pixel *src,
                          intptr_t stride, int width, int height, int16_t *buf )
@@ -177,13 +179,21 @@ static void hpel_filter( pixel *dsth, pixel *dstv, pixel *dstc, pixel *src,
         for( int x = -2; x < width+3; x++ )
         {
             int v = TAPFILTER(src,stride);
+            // 垂直方向插值
             dstv[x] = x264_clip_pixel( (v + 16) >> 5 );
             /* transform v for storage in a 16-bit integer */
             buf[x+2] = v + pad;
+            // 所以 buf 是一个临时的缓存区
+            // 存放 dstv 的未归一化版本，为了保持精度
         }
         for( int x = 0; x < width; x++ )
+            // 中心点
+            // 是用垂直的插值像素继续 六抽头 得到的
+            // >> 5 是因为 1 + 2 + 20 + 20 + 5 + 1 = 32
+            // >> 10 是因为 为了保持运算精度，第一次没有 >> 5
             dstc[x] = x264_clip_pixel( (TAPFILTER(buf+2,1) - 32*pad + 512) >> 10 );
         for( int x = 0; x < width; x++ )
+            // 水平方向插值
             dsth[x] = x264_clip_pixel( (TAPFILTER(src,1) + 16) >> 5 );
         dsth += stride;
         dstv += stride;
@@ -758,9 +768,9 @@ void x264_frame_filter( x264_t *h, x264_frame_t *frame, int mb_y, int b_end )
 
         if( !b_interlaced || h->mb.b_adaptive_mbaff )
             h->mc.hpel_filter(
-                frame->filtered[p][1] + offs,
-                frame->filtered[p][2] + offs,
-                frame->filtered[p][3] + offs,
+                frame->filtered[p][1] + offs,   // 水平像素内插
+                frame->filtered[p][2] + offs,   // 垂直像素内插
+                frame->filtered[p][3] + offs,   // 中间像素内插
                 frame->plane[p] + offs,
                 stride, width + 16, height - start,
                 h->scratch_buffer );
@@ -790,6 +800,10 @@ void x264_frame_filter( x264_t *h, x264_frame_t *frame, int mb_y, int b_end )
      * the sum of an 8x8 pixel region with top-left corner on that point.
      * in the lower plane, 4x4 sums (needed only with --partitions p4x4). */
 
+    // frame->integral 应该是额外用来分析的
+    // 两个平面 
+    // 第一个平面存 每个 8*8 块的像素和
+    // 第一个平面存 每个 4*4 块的像素和
     if( frame->integral )
     {
         int stride = frame->i_stride[0];

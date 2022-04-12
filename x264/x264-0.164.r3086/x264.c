@@ -2197,6 +2197,9 @@ fail:
     {
         double fps = (double)i_frame_output * (double)1000000 /
                      (double)( i_end - i_start );
+        
+        //fprintf(stderr, "encode time %.3f s\n", (double)(i_end - i_start));
+        // «ß∑÷÷Æ“ª∫¡√Î
 
         fprintf( stderr, "encoded %d frames, %.2f fps, %.2f kb/s\n", i_frame_output, fps,
                  (double) i_file * 8 / ( 1000 * duration ) );
