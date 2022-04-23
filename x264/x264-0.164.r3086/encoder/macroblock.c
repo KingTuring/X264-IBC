@@ -613,6 +613,41 @@ void x264_predict_lossless_16x16( x264_t *h, int p, int i_mode )
         h->predict_16x16[i_mode]( p_dst );
 }
 
+#ifdef Pixel_pred
+static void Store_pred_value(x264_t* h) {
+    extern int StrideY_twopass;
+    extern int StrideUV_twopass;
+    extern unsigned char* Pixel_pred_bufY;
+    int mx, my;
+    int mbw = h->param.i_width / 16;
+    //locate the mb
+    mx = (h->mb.i_mb_xy % mbw) * 16;
+    my = (h->mb.i_mb_xy / mbw) * 16;
+    unsigned char* Pred_bufY_twopass = Pixel_pred_bufY;
+    Pred_bufY_twopass += mx + my * StrideY_twopass;
+    //Store Y 
+    pixel* pix_pred_y = h->mb.pic.p_fdec[0];
+    for (int y = 0; y < 16; y++, pix_pred_y += FDEC_STRIDE, Pred_bufY_twopass += StrideY_twopass)
+    {
+        for (int x = 0; x < 16; x++)
+        {
+            Pred_bufY_twopass[x] = pix_pred_y[x];
+            //if (h->i_frame == 10 && Two_pass_flag == 1)
+            //{
+            //	if (x == 15) fprintf(log, "%d\n ", Pred_bufY_twopass[x]);
+            //	else fprintf(log, "%d ", Pred_bufY_twopass[x]);
+            //}
+        }
+    }
+    //if (h->i_frame == 10 && Two_pass_flag == 1)
+    //	fprintf(log, "MBID : %d\n", h->mb.i_mb_xy);
+    //fclose(log);
+}
+#endif // Pixel_pred
+
+
+
+
 /*****************************************************************************
  * x264_macroblock_encode:
  *****************************************************************************/
@@ -858,11 +893,16 @@ static ALWAYS_INLINE void macroblock_encode_internal( x264_t *h, int plane_count
         }
         else
         {
+#ifdef Pixel_pred
+            Store_pred_value(h);
+#endif
+
             ALIGNED_ARRAY_64( dctcoef, dct4x4,[16],[16] );
             for( int p = 0; p < plane_count; p++, i_qp = h->mb.i_chroma_qp )
             {
                 int quant_cat = p ? CQM_4PC : CQM_4PY;
                 CLEAR_16x16_NNZ( p );
+
                 h->dctf.sub16x16_dct( dct4x4, h->mb.pic.p_fenc[p], h->mb.pic.p_fdec[p] );
 
                 if( h->mb.b_noise_reduction )

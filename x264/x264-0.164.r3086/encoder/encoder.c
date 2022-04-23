@@ -2449,11 +2449,15 @@ static inline void reference_build_list( x264_t *h, int i_poc )
     }
 
 #if ReferenceFrameFixed
+    static x264_frame_t * unfilter_ref;
+    if (h->param.b_IBC && h->i_frame == 0) {
+        unfilter_ref = malloc(sizeof(x264_frame_t));
+    }
     // 在 reference 末尾加入当前帧
     if (h->param.b_IBC) {
         //x264_frame_push(h->fref[0], h->fdec);
         //++h->i_ref[0];
-        h->fref[0][h->i_ref[0]] = h->fdec;
+        h->fref[0][h->i_ref[0]] = unfilter_ref;
     }
 #endif
 
@@ -2894,6 +2898,7 @@ static intptr_t slice_write( x264_t *h )
     i_mb_y = h->sh.i_first_mb / h->mb.i_mb_width;
     i_mb_x = h->sh.i_first_mb % h->mb.i_mb_width;
     i_skip = 0;
+
     while( 1 )
     {
         mb_xy = i_mb_x + i_mb_y * h->mb.i_mb_width;
@@ -3179,6 +3184,20 @@ cont:
             i_mb_x = 0;
         }
     }
+
+#ifdef Pixel_pred
+    FILE* f_pred = fopen("pred.yuv", "ab"); 
+    {
+        pixel* plane = Pixel_pred_bufY;
+        for (int hei = 0; hei < h->param.i_height; ++hei) {
+            fwrite(plane, 1, h->fdec->i_width[0], f_pred);
+            plane += StrideY_twopass;
+        }
+        fclose(f_pred);
+    }
+#endif // Pixel_pred
+
+
     if( h->sh.i_last_mb < h->sh.i_first_mb )
         return 0;
 
@@ -4107,6 +4126,13 @@ int     x264_encoder_encode( x264_t *h,
     /* Write frame */
     h->i_threadslice_start = 0;
     h->i_threadslice_end = h->mb.i_mb_height;
+
+#if ReferenceFrameFixed
+    //if(h->fref[0][h->i_ref[0]]->plane)
+    memcpy(h->fref[0][h->i_ref[0]], h->fenc, sizeof(x264_frame_t));
+
+#endif
+
     if( h->i_thread_frames > 1 )
     {
         x264_threadpool_run( h->threadpool, (void*)slices_write, h );

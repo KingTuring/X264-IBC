@@ -43,6 +43,10 @@ static NOINLINE void mb_mc_0xywh( x264_t *h, int x, int y, int width, int height
 
     MC_LUMA( 0, 0 );
 
+#ifdef MotionVectorOutout
+    if (mvx > 2048);
+#endif
+
     if( CHROMA444 )
     {
         MC_LUMA( 0, 1 );

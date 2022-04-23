@@ -3302,7 +3302,8 @@ void x264_macroblock_analyse( x264_t *h )
     // avc2code - ReferenceFramesListFixed - version2
     if (h->i_nal_ref_idc == NAL_PRIORITY_HIGHEST || h->sh.i_type == SLICE_TYPE_I)
 #else
-    if (h->sh.i_type == SLICE_TYPE_I)
+    //if (h->sh.i_type == SLICE_TYPE_I)
+    if (h->sh.i_type == SLICE_TYPE_I /*|| h->mb.i_mb_xy % 4 == 0 || (h->mb.i_mb_xy / h->mb.i_mb_width) % 2 == 0*/)
 #endif // FrameIFixedVersion1
     {
     intra_analysis:
@@ -3348,7 +3349,7 @@ void x264_macroblock_analyse( x264_t *h )
             //printf("loc:%4d, x:%3d, y:%3d ", h->mb.i_mb_xy, analysis.l0.me16x16.mv[0], analysis.l0.me16x16.mv[1]);
             // 8x8_IBC
             mb_analyse_IBC_p8x8(h, &analysis);
-
+            
             int i_type = P_L0;
             int i_partition = D_16x16;
             i_cost = analysis.l0.i_rd16x16;
@@ -3701,6 +3702,11 @@ skip_analysis:
             COPY2_IF_LT( i_cost, analysis.i_satd_i8x8, i_type, I_8x8 );
             COPY2_IF_LT( i_cost, analysis.i_satd_i4x4, i_type, I_4x4 );
             COPY2_IF_LT( i_cost, analysis.i_satd_pcm, i_type, I_PCM );
+
+            //// dj
+            //i_cost = analysis.l0.i_cost8x8;
+            //i_partition = D_8x8;
+            //i_type = P_8x8;
 
             h->mb.i_type = i_type;
             

@@ -1,6 +1,6 @@
 #pragma once
 
-#define Avc2CodeValid 0
+#define Avc2CodeValid 1
 
 #if Avc2CodeValid
 
@@ -15,6 +15,12 @@
 #define Avc2CliLog 1
 #define RecFrameOutput 1
 #define BatResOutput 1
+#define Pixel_pred
+#define MotionVectorOutout
+
+int StrideY_twopass;
+int StrideUV_twopass;
+unsigned char * Pixel_pred_bufY;
 
 #else
 
@@ -27,6 +33,7 @@
 #define IntraBlockCopy_16_16 0
 #define IntraBlockCopy_8_8 0
 #define Avc2CliLog 0
+#define RecFrameOutput 0
 #define RecFrameOutput 0
 #define BatResOutput 0
 

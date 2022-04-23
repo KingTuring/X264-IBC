@@ -406,6 +406,31 @@ REALIGN_STACK int main( int argc, char **argv )
     SetConsoleTitleW( org_console_title );
 #endif
 
+#ifdef Pixel_pred
+    extern int StrideY_twopass;
+    StrideY_twopass = param.i_width;
+    extern int StrideUV_twopass;
+    StrideUV_twopass = param.i_width / 2;
+    extern unsigned char* Pixel_pred_bufY;
+    Pixel_pred_bufY = (unsigned char*)calloc(param.i_height * param.i_width, sizeof(unsigned char));
+#endif // Pixel_pred
+
+#ifdef Pixel_pred
+    FILE* f_pred = fopen("pred.yuv", "w");
+    fclose(f_pred);
+#endif // Pixel_pred
+
+#if RecFrameOutput
+    char file_name[100];
+    int len = strlen(param.output_file);
+    memcpy(file_name, param.output_file, len - 3);
+    file_name[len - 3] = 'y';
+    file_name[len - 2] = 'u';
+    file_name[len - 1] = 'v';
+    file_name[len] = '\0';
+    FILE* rec_pc = fopen(file_name, "w");
+    fclose(rec_pc);
+#endif
     /* Control-C handler */
     signal( SIGINT, sigint_handler );
     // 当发生了 SIGINT 时
