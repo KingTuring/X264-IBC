@@ -8,15 +8,17 @@
 #define FrameIFixedVersion1 1
 #define FrameIFixedVersion2 0
 #define ReferenceFrameFixed 1
-#define SpsFixed 0
+#define SpsFixed 1
 #define DecFrameFixed 1
 #define IntraBlockCopy_16_16 1
 #define IntraBlockCopy_8_8 1
 #define Avc2CliLog 1
 #define RecFrameOutput 1
 #define BatResOutput 1
-#define Pixel_pred
-#define MotionVectorOutout
+#define Pixel_pred 0
+#define MotionVectorOutout 0
+#define unfilter_frame_correct 1
+#define WriteSei 1
 
 int StrideY_twopass;
 int StrideUV_twopass;

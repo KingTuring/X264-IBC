@@ -325,7 +325,17 @@ void x264_sps_write( bs_t *s, x264_sps_t *sps )
     bs_write1( s, sps->b_constraint_set2 );
     bs_write1( s, sps->b_constraint_set3 );
 
-    bs_write( s, 4, 0 );    /* reserved */
+#if WriteSei && SpsFixed
+    bs_write(s, 3, 0);
+    if (sps->b_scc_IBC || sps->b_scc_PLT || sps->b_scc_ACT || sps->b_scc_AMVR) {
+        bs_write(s, 1, 1);
+    }
+    else {
+        bs_write(s, 1, 0);
+    }
+#else
+    bs_write(s, 4, 0);    /* reserved */
+#endif
 
     bs_write( s, 8, sps->i_level_idc );
 
@@ -333,13 +343,13 @@ void x264_sps_write( bs_t *s, x264_sps_t *sps )
 
 #if SpsFixed
     // avc2code - SpsFixed
-    bs_write1(s, sps->b_scc_extension);
+    /*bs_write1(s, sps->b_scc_extension);
     if (sps->b_scc_extension) {
         bs_write1(s, sps->b_scc_IBC);
         bs_write1(s, sps->b_scc_PLT);
         bs_write1(s, sps->b_scc_ACT);
         bs_write1(s, sps->b_scc_AMVR);
-    }
+    }*/
 #endif
 
     if( sps->i_profile_idc >= PROFILE_HIGH )

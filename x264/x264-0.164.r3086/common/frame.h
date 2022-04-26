@@ -84,6 +84,8 @@ typedef struct x264_frame
     pixel *plane[3];
     pixel *plane_fld[3];
     pixel *filtered[3][4]; /* plane[0], H, V, HV */
+    // 为什么要分开存
+    // 因为运动搜索，只能用 这四种像素中的一个 不能混用
     pixel *filtered_fld[3][4];
     pixel *lowres[4]; /* half-size copy of input frame: Orig, H, V, HV */
     uint16_t *integral;

@@ -408,6 +408,13 @@ struct x264_t
         int64_t i_second_largest_pts;
         int b_have_lowres;  /* Whether 1/2 resolution luma planes are being used */
         int b_have_sub8x8_esa;
+
+#if unfilter_frame_correct
+        pixel* unfiletered_frame[2];
+#else
+
+#endif // unfilter_frame_correct
+
     } frames;
 
     /* current frame being encoded */
@@ -675,6 +682,13 @@ struct x264_t
 
             /* fref stride */
             int     i_stride[3];
+
+#if unfilter_frame_correct
+            pixel* p_fref_unfiletered[2];
+#else
+
+#endif
+
         } pic;
 
         /* cache */

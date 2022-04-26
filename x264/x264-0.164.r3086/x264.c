@@ -406,7 +406,7 @@ REALIGN_STACK int main( int argc, char **argv )
     SetConsoleTitleW( org_console_title );
 #endif
 
-#ifdef Pixel_pred
+#if Pixel_pred
     extern int StrideY_twopass;
     StrideY_twopass = param.i_width;
     extern int StrideUV_twopass;
@@ -415,7 +415,7 @@ REALIGN_STACK int main( int argc, char **argv )
     Pixel_pred_bufY = (unsigned char*)calloc(param.i_height * param.i_width, sizeof(unsigned char));
 #endif // Pixel_pred
 
-#ifdef Pixel_pred
+#if Pixel_pred
     FILE* f_pred = fopen("pred.yuv", "w");
     fclose(f_pred);
 #endif // Pixel_pred

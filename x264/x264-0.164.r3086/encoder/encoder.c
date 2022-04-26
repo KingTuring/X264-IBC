@@ -2449,15 +2449,16 @@ static inline void reference_build_list( x264_t *h, int i_poc )
     }
 
 #if ReferenceFrameFixed
-    static x264_frame_t * unfilter_ref;
-    if (h->param.b_IBC && h->i_frame == 0) {
-        unfilter_ref = malloc(sizeof(x264_frame_t));
-    }
-    // 在 reference 末尾加入当前帧
+    //static x264_frame_t * unfilter_ref;
+    //if (h->param.b_IBC && h->i_frame == 0) {
+    //    unfilter_ref = malloc(sizeof(x264_frame_t));
+    //}
+    //// 在 reference 末尾加入当前帧
     if (h->param.b_IBC) {
         //x264_frame_push(h->fref[0], h->fdec);
         //++h->i_ref[0];
-        h->fref[0][h->i_ref[0]] = unfilter_ref;
+        //h->fref[0][h->i_ref[0]] = unfilter_ref;
+        h->fref[0][h->i_ref[0]] = h->fdec;
     }
 #endif
 
@@ -2899,6 +2900,15 @@ static intptr_t slice_write( x264_t *h )
     i_mb_x = h->sh.i_first_mb % h->mb.i_mb_width;
     i_skip = 0;
 
+#if unfilter_frame_correct
+    for (int i = 0; i < 2; ++i) {
+        pixel* unfilter_frame = malloc(sizeof(pixel) * h->fdec->i_stride[i] * h->fdec->i_lines[i]);
+        h->frames.unfiletered_frame[i] = unfilter_frame;
+    }
+#else
+
+#endif
+
     while( 1 )
     {
         mb_xy = i_mb_x + i_mb_y * h->mb.i_mb_width;
@@ -3074,6 +3084,25 @@ cont:
         x264_macroblock_cache_save( h );
         // intra_border_backup
 
+#if unfilter_frame_correct
+        pixel* pix_offset[2];
+        pixel* pix_dec[2];
+        for (int p = 0; p < 2; ++p) {
+            pix_offset[p] = h->frames.unfiletered_frame[p] + i_mb_y * (p > 0 ? 16 >> CHROMA_V_SHIFT : 16) * h->fdec->i_stride[p] + i_mb_x * 16;
+            pix_dec[p] = h->fdec->plane[p] + i_mb_y * (p > 0 ? 16 >> CHROMA_V_SHIFT : 16) * h->fdec->i_stride[p] + i_mb_x * 16;
+        }
+        for (int i = 0; i < 2; ++i) {
+            /*for (int j = 0; j < 16; ++j) pix_offset[j] = pix_dex[j];
+            pix_offset += h->fdec->i_stride[0];
+            pix_dex += h->fdec->i_stride[0];*/
+            if (i > 0)
+                h->mc.store_interleave_chroma(pix_offset[i], h->fdec->i_stride[i], h->mb.pic.p_fdec[1], h->mb.pic.p_fdec[2], (i > 0 ? 16 >> CHROMA_V_SHIFT : 16));
+            else
+                h->mc.copy[PIXEL_16x16](pix_offset[i], h->fdec->i_stride[i], pix_dec[i], h->fdec->i_stride[i], 16);
+        }
+
+#endif // unfilter_frame_correct
+
         // 率控后处理
         // x264_ratecontrol_mb( h, mb_size ) < 0
         // 重新编码
@@ -3185,7 +3214,7 @@ cont:
         }
     }
 
-#ifdef Pixel_pred
+#if Pixel_pred
     FILE* f_pred = fopen("pred.yuv", "ab"); 
     {
         pixel* plane = Pixel_pred_bufY;
@@ -3260,15 +3289,24 @@ cont:
     file_name[len - 2] = 'u';
     file_name[len - 1] = 'v';
     file_name[len] = '\0';
-    FILE* rec_pc = fopen(file_name , "ab");
-    pixel* plane = h->fdec->plane[0];
+    //pixel* pla[2] = h->fdec->plane;
+    pixel* pla[2];
+#if unfilter_frame_correct
+    //for (int i = 0; i < 2; ++i) pla[i] = h->frames.unfiletered_frame[i];    // 要输出来的平面的 平面名
+    for (int i = 0; i < 2; ++i) pla[i] = h->fdec->plane[i];
+#else
+    for (int i = 0; i < 2; ++i) pla[i] = h->fdec->plane[i];    // 要输出来的平面的 平面名
+    //for (int i = 0; i < 2; ++i) pla[i] = h->frames.unfiletered_frame[i];
+#endif
+    FILE* rec_pc = fopen(file_name, "ab");
+    pixel* plane = pla[0];
     for (int hei = 0; hei < h->param.i_height; ++hei) {
         fwrite(plane, 1, h->fdec->i_width[0], rec_pc);
         plane += h->fdec->i_stride[0];
     }
     pixel* cache_u = malloc(sizeof(pixel) * h->param.i_height * h->param.i_width);
     pixel* cache_v = cache_u + h->param.i_height * h->param.i_width / 2;
-    plane = h->fdec->plane[1];
+    plane = pla[1];
     pixel* temp_u = cache_u, * temp_v = cache_v;
     for (int hei = 0; hei < h->param.i_height / 2; ++hei) {
         for (int wid = 0; wid < h->param.i_width; ++wid) {
@@ -3283,6 +3321,13 @@ cont:
     fwrite(cache_v, 1, (h->param.i_width / 2) * (h->param.i_height / 2), rec_pc);
     fclose(rec_pc);
 #endif //  RecFrameOutput
+
+#if unfilter_frame_correct
+    for (int i = 0; i < 2; ++i) free(h->frames.unfiletered_frame[i]);
+#else
+
+#endif // unfilter_frame_correct
+
     return 0;
 }
 
@@ -3935,7 +3980,36 @@ int     x264_encoder_encode( x264_t *h,
                return -1;
             overhead += h->out.nal[h->out.i_nal-1].i_payload + SEI_OVERHEAD;
         }
+
+#if WriteSei
+        h->fenc->extra_sei.payloads = (x264_sei_t*)malloc(sizeof(x264_sei_t));
+        h->fenc->extra_sei.payloads->payload_size = 1;
+        h->fenc->extra_sei.payloads->payload_type = 1;
+        h->fenc->extra_sei.payloads->payload = (uint8_t*)malloc(sizeof(uint8_t));
+        *h->fenc->extra_sei.payloads->payload = h->param.b_IBC * 1 + h->param.b_ACT * 2 + h->param.b_AMVR * 4 + h->param.b_PLT * 8;
+        h->fenc->extra_sei.num_payloads = 1;
+        h->fenc->extra_sei.sei_free = &free;
+        for (int i = 0; i < h->fenc->extra_sei.num_payloads; i++)
+        {
+            nal_start(h, NAL_SEI, NAL_PRIORITY_DISPOSABLE);
+            x264_sei_write(&h->out.bs, h->fenc->extra_sei.payloads[i].payload, h->fenc->extra_sei.payloads[i].payload_size,
+                h->fenc->extra_sei.payloads[i].payload_type);
+            if (nal_end(h))
+                return -1;
+            overhead += h->out.nal[h->out.i_nal - 1].i_payload + SEI_OVERHEAD;
+            if (h->fenc->extra_sei.sei_free)
+            {
+                h->fenc->extra_sei.num_payloads = 0;
+                h->fenc->extra_sei.payloads[i].payload_size = 0;
+                h->fenc->extra_sei.payloads[i].payload_type = 0;
+                h->fenc->extra_sei.sei_free(h->fenc->extra_sei.payloads[i].payload);
+                h->fenc->extra_sei.payloads[i].payload = NULL;
+            }
+        }
+#endif // WriteSei
     }
+
+
 
     /* write extra sei */
     for( int i = 0; i < h->fenc->extra_sei.num_payloads; i++ )
@@ -4129,7 +4203,7 @@ int     x264_encoder_encode( x264_t *h,
 
 #if ReferenceFrameFixed
     //if(h->fref[0][h->i_ref[0]]->plane)
-    memcpy(h->fref[0][h->i_ref[0]], h->fenc, sizeof(x264_frame_t));
+    //memcpy(h->fref[0][h->i_ref[0]], h->fenc, sizeof(x264_frame_t));
 
 #endif
 

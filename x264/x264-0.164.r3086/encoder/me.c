@@ -992,10 +992,10 @@ if( (y) < (x) )\
         //bmy = (y_max - 128 > 0) ? y_max - 64 : 0;
         bmx = 0;
         bmy = 0;
-        int bestx = bmx, besty = bmy;
+        int bestx = bmx - x_max, besty = bmy - y_max;
 
-        for (int wid = bmx - x_max; wid < 0; wid += 2) {
-            for (int col = bmy - y_max ; col < 0; col += 2) {
+        for (int wid = bmx - x_max; wid < -16; wid += 2) {
+            for (int col = bmy - y_max ; col < -16; col += 2) {
                 COST_MV_X4_DIR(wid, col, wid + 1, col, wid, col + 1, wid + 1, col + 1, costs);
                 COPY1_IF_LT_DJ(bcost, costs[0], wid, col);    // 0001
                 COPY1_IF_LT_DJ(bcost, costs[1], wid + 1, col);    // 0011

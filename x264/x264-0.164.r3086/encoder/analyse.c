@@ -2430,7 +2430,42 @@ static void mb_analyse_IBC_p8x8(x264_t* h, x264_mb_analysis_t* a)
         LOAD_HPELS(m, h->mb.pic.p_fref[0][i_ref], 0, i_ref, 8 * x8, 8 * y8);
         LOAD_WPELS(m, h->mb.pic.p_fref_w[i_ref], 0, i_ref, 8 * x8, 8 * y8);
 
+        if (h->mb.i_mb_xy == 736 / 16 + 32 /16 * h->mb.i_mb_width) {
+            int stop = 0;
+        }
+
         x264_mb_predict_mv(h, 0, 4 * i, 2, m->mvp);
+
+        /*char file_name[100];
+        int len = strlen(h->param.output_file);
+        memcpy(file_name, h->param.output_file, len - 3);
+        file_name[len - 3] = 'y';
+        file_name[len - 2] = 'u';
+        file_name[len - 1] = 'v';
+        file_name[len] = '\0';
+        FILE* rec_pc = fopen(file_name, "ab");
+        pixel* plane = h->fdec->plane[0];
+        for (int hei = 0; hei < h->param.i_height; ++hei) {
+            fwrite(plane, 1, h->fdec->i_width[0], rec_pc);
+            plane += h->fdec->i_stride[0];
+        }
+        pixel* cache_u = malloc(sizeof(pixel) * h->param.i_height * h->param.i_width);
+        pixel* cache_v = cache_u + h->param.i_height * h->param.i_width / 2;
+        plane = h->fdec->plane[1];
+        pixel* temp_u = cache_u, * temp_v = cache_v;
+        for (int hei = 0; hei < h->param.i_height / 2; ++hei) {
+            for (int wid = 0; wid < h->param.i_width; ++wid) {
+                temp_u[wid] = plane[2 * wid];
+                temp_v[wid] = plane[2 * wid + 1];
+            }
+            plane += h->fdec->i_stride[1];
+            temp_u += h->param.i_width / 2;
+            temp_v += h->param.i_width / 2;
+        }
+        fwrite(cache_u, 1, (h->param.i_width / 2) * (h->param.i_height / 2), rec_pc);
+        fwrite(cache_v, 1, (h->param.i_width / 2) * (h->param.i_height / 2), rec_pc);
+        fclose(rec_pc);*/
+
         x264_IBC_search_ref(h, m, COST_MAX);
         //x264_me_search(h, m, mvc, i_mvc);
 
@@ -3340,7 +3375,9 @@ void x264_macroblock_analyse( x264_t *h )
 #if IntraBlockCopy_16_16
 // avc2code - IntraBlockCopy_16_16
 //int intra_rd_cost = rd_cost_mb(h, analysis.i_lambda2);
-
+        /*if (h->mb.i_mb_xy == 720 / 16 + 80 / 16 * h->mb.i_mb_width) {
+            int stop = 0;
+        }*/
         if (h->param.b_IBC) {
             // 16x16_IBC
             int temp_type = h->mb.i_type;

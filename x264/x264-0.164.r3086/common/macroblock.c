@@ -43,7 +43,7 @@ static NOINLINE void mb_mc_0xywh( x264_t *h, int x, int y, int width, int height
 
     MC_LUMA( 0, 0 );
 
-#ifdef MotionVectorOutout
+#if MotionVectorOutout
     if (mvx > 2048);
 #endif
 
@@ -667,6 +667,17 @@ static ALWAYS_INLINE void macroblock_load_pic_pointers( x264_t *h, int mb_x, int
         {
             plane_src = h->fref[0][j]->plane[i];        // 这里存放的是原平面
             filtered_src = h->fref[0][j]->filtered[i];  // 这里存放的是插值平面
+
+#if unfilter_frame_correct
+            if(h->param.b_IBC)
+            if (j == h->mb.pic.i_fref[0]) {
+                plane_src = h->frames.unfiletered_frame[i];
+                //filtered_src = NULL;
+            }
+#else
+
+#endif // unfilter_frame_correct
+
         }
         h->mb.pic.p_fref[0][j][i*4] = plane_src + ref_pix_offset[j&1];
 
@@ -1703,6 +1714,7 @@ static ALWAYS_INLINE void macroblock_store_pic( x264_t *h, int mb_x, int mb_y, i
         h->mc.store_interleave_chroma( &h->fdec->plane[1][i_pix_offset], i_stride2, h->mb.pic.p_fdec[1], h->mb.pic.p_fdec[2], height );
     else
         h->mc.copy[PIXEL_16x16]( &h->fdec->plane[i][i_pix_offset], i_stride2, h->mb.pic.p_fdec[i], FDEC_STRIDE, 16 );
+
 }
 
 static ALWAYS_INLINE void macroblock_backup_intra( x264_t *h, int mb_x, int mb_y, int b_mbaff )

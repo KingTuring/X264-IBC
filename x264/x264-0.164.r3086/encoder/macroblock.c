@@ -613,7 +613,7 @@ void x264_predict_lossless_16x16( x264_t *h, int p, int i_mode )
         h->predict_16x16[i_mode]( p_dst );
 }
 
-#ifdef Pixel_pred
+#if Pixel_pred
 static void Store_pred_value(x264_t* h) {
     extern int StrideY_twopass;
     extern int StrideUV_twopass;
@@ -893,7 +893,7 @@ static ALWAYS_INLINE void macroblock_encode_internal( x264_t *h, int plane_count
         }
         else
         {
-#ifdef Pixel_pred
+#if Pixel_pred
             Store_pred_value(h);
 #endif
 

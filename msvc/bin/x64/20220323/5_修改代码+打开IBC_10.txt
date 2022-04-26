@@ -1,0 +1,20 @@
+yuv [info]: 1280x720p 0:0 @ 60/1 fps (cfr)
+x264 [warning]: --psnr used with psy on: results will be invalid!
+x264 [warning]: --tune psnr should be used if attempting to benchmark psnr!
+x264 [info]: using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX FMA3 BMI2 AVX2
+x264 [info]: profile High, level 3.2, 4:2:0, 8-bit
+x264 [info]: frame P:10    Avg QP:47.22  size:  2326  PSNR Mean Y:18.62 U:35.04 V:34.07 Avg:20.32 Global:20.27
+x264 [info]: mb P  I16..4:  6.9%  7.0%  0.9%  P16..4:  5.1%  0.5%  1.7%  0.0%  0.0%    skip:77.9%
+x264 [info]: final ratefactor: 42.78
+x264 [info]: 8x8 transform intra:47.2% inter:55.8%
+x264 [info]: coded y,uvDC,uvAC intra: 20.6% 22.5% 2.8% inter: 0.9% 0.8% 0.0%
+x264 [info]: i16 v,h,dc,p: 29% 60%  5%  6%
+x264 [info]: i8 v,h,dc,ddl,ddr,vr,hd,vl,hu: 17% 36% 36%  1%  1%  2%  2%  1%  4%
+x264 [info]: i4 v,h,dc,ddl,ddr,vr,hd,vl,hu: 23% 32% 28%  2%  3%  3%  4%  2%  3%
+x264 [info]: i8c dc,h,v,p: 87% 11%  2%  0%
+x264 [info]: Weighted P-Frames: Y:0.0% UV:0.0%
+x264 [info]: ref P L0: 84.0% 16.0%
+x264 [info]: SSIM Mean Y:0.6639050 ( 4.735db)
+x264 [info]: PSNR Mean Y:18.619 U:35.042 V:34.074 Avg:20.324 Global:20.267 kb/s:1116.29
+
+encoded 10 frames, 9.43 fps, 1116.29 kb/s
