@@ -832,6 +832,7 @@ static void mb_analyse_intra( x264_t *h, x264_mb_analysis_t *a, int i_satd_inter
             int i_pred_mode = x264_mb_predict_intra4x4_mode( h, 4*idx );
 
             const int8_t *predict_mode = predict_8x8_mode_available( a->b_avoid_topright, h->mb.i_neighbour8[idx], idx );
+            // ÐÐÂË²¨
             h->predict_8x8_filter( p_dst_by, edge, h->mb.i_neighbour8[idx], ALL_NEIGHBORS );
 
             if( h->pixf.intra_mbcmp_x9_8x8 && predict_mode[8] >= 0 )
@@ -1535,7 +1536,7 @@ static void mb_analyse_IBC_p16x16(x264_t* h, x264_mb_analysis_t* a)
         fwrite(cache_v, 1, (h->param.i_width / 2) * (h->param.i_height / 2), rec_pc);
         fclose(rec_pc);*/
 
-        x264_IBC_search_ref(h, &m,p_halfpel_thresh);
+        x264_IBC_search_ref(h, &m,p_halfpel_thresh, -1, -1);
 
         /* save mv for predicting neighbors */
         CP32(h->mb.mvr[0][i_ref][h->mb.i_mb_xy], m.mv);
@@ -2400,12 +2401,96 @@ static void rd_ibc_IBC_p8x8(x264_t* h, x264_mb_analysis_t* a) {
     a->l0.i_cost8x8 = rd_cost_mb(h, a->i_lambda2);
 };
 
+#if HashME
+static unsigned int xIntraBCHashTableIndex(pixel* cur_subMB, int cxstride) {
+    int cxheight = 8, cxwidth = 8;
+    int totalSamples = cxheight * cxwidth;
+    unsigned int        hashIdx = 0;
+    unsigned int        grad = 0;
+    unsigned int        avgDC1 = 0;
+    unsigned int        avgDC2 = 0;
+    unsigned int        avgDC3 = 0;
+    unsigned int        avgDC4 = 0;
+    unsigned int        gradX = 0;
+    unsigned int        gradY = 0; 
+    for (int y = 1; y < (cxheight >> 1); y++)
+    {
+        for (int x = 1; x < (cxwidth >> 1); x++)
+        {
+            avgDC1 += cur_subMB[y * cxstride + x];
+            gradX = abs(cur_subMB[y * cxstride + x] - cur_subMB[y * cxstride + x - 1]);
+            gradY = abs(cur_subMB[y * cxstride + x] - cur_subMB[(y - 1) * cxstride + x]);
+            grad += (gradX + gradY) >> 1;
+        }
+    }
+
+    for (int y = (cxheight >> 1); y < cxheight; y++)
+    {
+        for (int x = 1; x < (cxwidth >> 1); x++)
+        {
+            avgDC2 += cur_subMB[y * cxstride + x];
+            gradX = abs(cur_subMB[y * cxstride + x] - cur_subMB[y * cxstride + x - 1]);
+            gradY = abs(cur_subMB[y * cxstride + x] - cur_subMB[(y - 1) * cxstride + x]);
+            grad += (gradX + gradY) >> 1;
+        }
+    }
+
+    for (int y = 1; y < (cxheight >> 1); y++)
+    {
+        for (int x = (cxwidth >> 1); x < cxwidth; x++)
+        {
+            avgDC3 += cur_subMB[y * cxstride + x];
+            gradX = abs(cur_subMB[y * cxstride + x] - cur_subMB[y * cxstride + x - 1]);
+            gradY = abs(cur_subMB[y * cxstride + x] - cur_subMB[(y - 1) * cxstride + x]);
+            grad += (gradX + gradY) >> 1;
+        }
+    }
+
+    for (int y = (cxheight >> 1); y < cxheight; y++)
+    {
+        for (int x = (cxwidth >> 1); x < cxwidth; x++)
+        {
+            avgDC4 += cur_subMB[y * cxstride + x];
+            gradX = abs(cur_subMB[y * cxstride + x] - cur_subMB[y * cxstride + x - 1]);
+            gradY = abs(cur_subMB[y * cxstride + x] - cur_subMB[(y - 1) * cxstride + x]);
+            grad += (gradX + gradY) >> 1;
+        }
+    }
+
+    avgDC1 = (avgDC1 << 2) / (totalSamples);
+    avgDC2 = (avgDC2 << 2) / (totalSamples);
+    avgDC3 = (avgDC3 << 2) / (totalSamples);
+    avgDC4 = (avgDC4 << 2) / (totalSamples);
+
+    grad = grad / (totalSamples);
+
+    grad = (grad >> 4) & 0xf; // 4 bits
+
+    avgDC1 = (avgDC1 >> 5) & 0x7; // 3 bits
+    avgDC2 = (avgDC2 >> 5) & 0x7;
+    avgDC3 = (avgDC3 >> 5) & 0x7;
+    avgDC4 = (avgDC4 >> 5) & 0x7;
+
+    // Ò»¹²16bit
+    hashIdx = (avgDC1 << 13) + (avgDC2 << 10) + (avgDC3 << 7) + (avgDC4 << 4) + grad;
+
+    assert(hashIdx <= 0XFFFF);
+    return hashIdx;
+}
+
+static void* getHashLinklist(int OrgHashIndex) {
+    return NULL;
+}
+
+#endif // HashME
+
 static void mb_analyse_IBC_p8x8(x264_t* h, x264_mb_analysis_t* a)
 {
     /* Duplicate refs are rarely useful in p8x8 due to the high cost of the
      * reference frame flags.  Thus, if we're not doing mixedrefs, just
      * don't bother analysing the dupes. */
-    const int i_ref = a->l0.me16x16.i_ref;
+    //const int i_ref = a->l0.me16x16.i_ref;
+    const int i_ref = h->i_ref[0];
     const int i_ref_cost = h->param.b_cabac || i_ref ? REF_COST(0, i_ref) : 0;
     pixel** p_fenc = h->mb.pic.p_fenc;
     int i_mvc;
@@ -2429,14 +2514,15 @@ static void mb_analyse_IBC_p8x8(x264_t* h, x264_mb_analysis_t* a)
         LOAD_FENC(m, p_fenc, 8 * x8, 8 * y8);
         LOAD_HPELS(m, h->mb.pic.p_fref[0][i_ref], 0, i_ref, 8 * x8, 8 * y8);
         LOAD_WPELS(m, h->mb.pic.p_fref_w[i_ref], 0, i_ref, 8 * x8, 8 * y8);
-
+        
+        //dj
         if (h->mb.i_mb_xy == 736 / 16 + 32 /16 * h->mb.i_mb_width) {
             int stop = 0;
         }
 
         x264_mb_predict_mv(h, 0, 4 * i, 2, m->mvp);
 
-        /*char file_name[100];
+        {/*char file_name[100];
         int len = strlen(h->param.output_file);
         memcpy(file_name, h->param.output_file, len - 3);
         file_name[len - 3] = 'y';
@@ -2464,9 +2550,14 @@ static void mb_analyse_IBC_p8x8(x264_t* h, x264_mb_analysis_t* a)
         }
         fwrite(cache_u, 1, (h->param.i_width / 2) * (h->param.i_height / 2), rec_pc);
         fwrite(cache_v, 1, (h->param.i_width / 2) * (h->param.i_height / 2), rec_pc);
-        fclose(rec_pc);*/
+        fclose(rec_pc);*/}
 
-        x264_IBC_search_ref(h, m, COST_MAX);
+#if HashME
+        //int OrgHashIndex = xIntraBCHashTableIndex(h->mb.pic.p_fenc_plane[0] + 8 * x8 + 8 * y8 * h->fenc->i_stride[0], h->fenc->i_stride[0]);
+        //void* NodeList = getHashLinklist(OrgHashIndex);
+#endif // HashME
+
+        x264_IBC_search_ref(h, m, COST_MAX, x8, y8);
         //x264_me_search(h, m, mvc, i_mvc);
 
         x264_macroblock_cache_mv_ptr(h, 2 * x8, 2 * y8, 2, 2, 0, m->mv);
@@ -3381,19 +3472,43 @@ void x264_macroblock_analyse( x264_t *h )
         if (h->param.b_IBC) {
             // 16x16_IBC
             int temp_type = h->mb.i_type;
+            if (h->mb.i_mb_x * 16 == 176 && h->mb.i_mb_y * 16 == 416) {
+                int stop = 0;
+            }
             mb_analyse_load_costs(h, &analysis);
+#if Hash_16
             mb_analyse_IBC_p16x16(h, &analysis);
+#endif
             //printf("loc:%4d, x:%3d, y:%3d ", h->mb.i_mb_xy, analysis.l0.me16x16.mv[0], analysis.l0.me16x16.mv[1]);
             // 8x8_IBC
+#if Hash_8
             mb_analyse_IBC_p8x8(h, &analysis);
-            
-            int i_type = P_L0;
-            int i_partition = D_16x16;
+#endif
+
+#if Hash_16
+            h->mb.i_type = P_L0;
+            h->mb.i_partition = D_16x16;
             i_cost = analysis.l0.i_rd16x16;
+#elif Hash_8
+            h->mb.i_type = P_8x8;
+            h->mb.i_partition = D_8x8;
+            i_cost = analysis.l0.i_cost8x8;
+#else
+            h->mb.i_type = I_16x16;
+            i_cost = analysis.i_satd_i16x16;
+#endif
+
+            if (i_cost == 6052) {
+                int stop = 0;
+            }
             COPY3_IF_LT(i_cost, analysis.l0.i_cost8x8, h->mb.i_type, P_8x8, h->mb.i_partition, D_8x8);
             COPY2_IF_LT(i_cost, analysis.i_satd_i16x16, h->mb.i_type, I_16x16);
             COPY2_IF_LT(i_cost, analysis.i_satd_i8x8, h->mb.i_type, I_8x8);
             COPY2_IF_LT(i_cost, analysis.i_satd_i4x4, h->mb.i_type, I_4x4);
+            if (h->mb.i_type == P_8x8) {
+                int stop = 0;
+                //printf("%d,%d\n", h->mb.i_mb_x * 16, h->mb.i_mb_y * 16);
+            }
         }
 #endif
 

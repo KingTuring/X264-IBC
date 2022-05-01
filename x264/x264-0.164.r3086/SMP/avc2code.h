@@ -19,6 +19,10 @@
 #define MotionVectorOutout 0
 #define unfilter_frame_correct 1
 #define WriteSei 1
+#define HashME 1
+#define PrintHashInfo 1
+#define Hash_16 0
+#define Hash_8 1
 
 int StrideY_twopass;
 int StrideUV_twopass;
@@ -39,4 +43,13 @@ unsigned char * Pixel_pred_bufY;
 #define RecFrameOutput 0
 #define BatResOutput 0
 
+#endif
+
+#if HashME
+#define INTRABC_HASH_TABLESIZE 65536
+#endif // HashME
+
+#if PrintHashInfo
+#define PrintPixelKey 1
+#define PrintKeyNum 0
 #endif

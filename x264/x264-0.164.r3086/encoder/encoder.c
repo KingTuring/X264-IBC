@@ -2838,6 +2838,205 @@ static ALWAYS_INLINE void bitstream_restore( x264_t *h, x264_bs_bak_t *bak, int 
     }
 }
 
+#if HashME
+static void ClearIntraBCHashTable(struct HashClass** Hash_Info) {
+    for (int idx = 0; idx < INTRABC_HASH_TABLESIZE; idx++)
+    {
+        if ((*Hash_Info[idx]).m_pcIntraBCHashTable == NULL)
+        {
+            continue;
+        }
+        else
+        {
+            IntraBCHashNode* tempNode = Hash_Info[idx]->m_pcIntraBCHashTable;
+            IntraBCHashNode* tempNode1;
+            while (tempNode)
+            {
+                tempNode1 = tempNode;
+                tempNode = tempNode->next;
+                free(tempNode1);
+            }
+            Hash_Info[idx]->m_pcIntraBCHashTable = NULL;
+        }
+    }
+}
+
+static void setHashLinklist(IntraBCHashNode* hashLinklist, int hashIdx, struct HashClass** Hash_Info)
+{
+    if ((*Hash_Info[hashIdx]).i_LengthIntraBCHashTable == 10) {
+        int i = 8;
+        IntraBCHashNode* temp = (*Hash_Info[hashIdx]).m_pcIntraBCHashTable;
+        while (i-- > 0) {
+            temp = temp->next;
+        }
+        temp->next = NULL;
+        free(temp->next);
+    }
+    else {
+        ++(*Hash_Info[hashIdx]).i_LengthIntraBCHashTable;
+    }
+    hashLinklist->next = (*Hash_Info[hashIdx]).m_pcIntraBCHashTable;
+    (*Hash_Info[hashIdx]).m_pcIntraBCHashTable = hashLinklist;
+    // m_pcIntraBCHashTable[hashIdx] 放的是头结点
+    // 所以每次后移一个节点，就是相当于直接在头加一个节点
+}
+
+static unsigned int xIntraBCHashTableIndex(pixel* cur_subMB, int cxstride) {
+    int cxheight = 8, cxwidth = 8;
+    int totalSamples = cxheight * cxwidth;
+    unsigned int        hashIdx = 0;
+    unsigned int        grad = 0;
+    unsigned int        avgDC1 = 0;
+    unsigned int        avgDC2 = 0;
+    unsigned int        avgDC3 = 0;
+    unsigned int        avgDC4 = 0;
+    unsigned int        gradX = 0;
+    unsigned int        gradY = 0;
+    for (int y = 1; y < (cxheight >> 1); y++)
+    {
+        for (int x = 1; x < (cxwidth >> 1); x++)
+        {
+            avgDC1 += cur_subMB[y * cxstride + x];
+            gradX = abs(cur_subMB[y * cxstride + x] - cur_subMB[y * cxstride + x - 1]);
+            gradY = abs(cur_subMB[y * cxstride + x] - cur_subMB[(y - 1) * cxstride + x]);
+            grad += (gradX + gradY) >> 1;
+        }
+    }
+
+    for (int y = (cxheight >> 1); y < cxheight; y++)
+    {
+        for (int x = 1; x < (cxwidth >> 1); x++)
+        {
+            avgDC2 += cur_subMB[y * cxstride + x];
+            gradX = abs(cur_subMB[y * cxstride + x] - cur_subMB[y * cxstride + x - 1]);
+            gradY = abs(cur_subMB[y * cxstride + x] - cur_subMB[(y - 1) * cxstride + x]);
+            grad += (gradX + gradY) >> 1;
+        }
+    }
+
+    for (int y = 1; y < (cxheight >> 1); y++)
+    {
+        for (int x = (cxwidth >> 1); x < cxwidth; x++)
+        {
+            avgDC3 += cur_subMB[y * cxstride + x];
+            gradX = abs(cur_subMB[y * cxstride + x] - cur_subMB[y * cxstride + x - 1]);
+            gradY = abs(cur_subMB[y * cxstride + x] - cur_subMB[(y - 1) * cxstride + x]);
+            grad += (gradX + gradY) >> 1;
+        }
+    }
+
+    for (int y = (cxheight >> 1); y < cxheight; y++)
+    {
+        for (int x = (cxwidth >> 1); x < cxwidth; x++)
+        {
+            avgDC4 += cur_subMB[y * cxstride + x];
+            gradX = abs(cur_subMB[y * cxstride + x] - cur_subMB[y * cxstride + x - 1]);
+            gradY = abs(cur_subMB[y * cxstride + x] - cur_subMB[(y - 1) * cxstride + x]);
+            grad += (gradX + gradY) >> 1;
+        }
+    }
+
+    avgDC1 = (avgDC1 << 2) / (totalSamples);
+    avgDC2 = (avgDC2 << 2) / (totalSamples);
+    avgDC3 = (avgDC3 << 2) / (totalSamples);
+    avgDC4 = (avgDC4 << 2) / (totalSamples);
+
+    grad = grad / (totalSamples);
+
+    grad = (grad >> 4) & 0xf; // 4 bits
+
+    avgDC1 = (avgDC1 >> 5) & 0x7; // 3 bits
+    avgDC2 = (avgDC2 >> 5) & 0x7;
+    avgDC3 = (avgDC3 >> 5) & 0x7;
+    avgDC4 = (avgDC4 >> 5) & 0x7;
+
+    // 一共16bit
+    hashIdx = (avgDC1 << 13) + (avgDC2 << 10) + (avgDC3 << 7) + (avgDC4 << 4) + grad;
+
+    assert(hashIdx <= 0XFFFF);
+    return hashIdx;
+}
+
+static void* getHashLinklist(int OrgHashIndex) {
+    return NULL;
+}
+
+static void xIntraBCHashTableUpdate(x264_t* h) {
+    int         roiWidth = 8;
+    int         roiHeight = 8;
+    int         cuPelX = h->mb.i_mb_x * 16;
+    int         cuPelY = h->mb.i_mb_y * 16;
+    int         tempX;
+    int         tempY;
+    int         picWidth = h->param.i_width;
+    int         picHeight = h->param.i_height;
+    int         orgHashIndex;
+    IntraBCHashNode* newHashNode;
+
+    int startj = -7;
+    int starti = -7;
+    if (h->mb.i_mb_x == 0) starti = 0;
+    if (h->mb.i_mb_y == 0) startj = 0;
+    for (int j = startj; j <= 8; j++)
+    {
+        tempY = cuPelY + j;
+        for (int i = starti; i <= 8; i++)
+        {
+            tempX = cuPelX + i;
+
+            orgHashIndex = xIntraBCHashTableIndex(h->frames.unfiletered_frame[0] + tempX + tempY * h->fdec->i_stride[0], h->fdec->i_stride[0]);
+            //orgHashIndex = xIntraBCHashTableIndex(h->fenc->plane[0] + tempX + tempY * h->fenc->i_stride[0], h->fenc->i_stride[0]);
+
+            if (orgHashIndex < 0)
+            {
+                continue;
+            }
+
+            newHashNode = (IntraBCHashNode*) malloc(sizeof(IntraBCHashNode));
+
+            assert(newHashNode);
+
+            newHashNode->posX = tempX;
+            newHashNode->posY = tempY;
+            setHashLinklist(newHashNode, orgHashIndex, h->Hash_Info); //Intra full frame hash search only for 8x8
+        }
+    }
+}
+
+#if PrintKeyNum
+static void HashInfo(x264_t* h) {
+    int num = 0;
+    void** p = h->m_pcIntraBCHashTable;
+    int i = 0;
+    while (i++ < INTRABC_HASH_TABLESIZE) {
+        if (p[i] != NULL) ++num;
+    }
+    printf("%d\n", num);
+}
+#endif // PrintKeyNum
+
+#if PrintPixelKey
+static void PixelKey(x264_t* h) {
+    pixel* plane = h->fenc->plane[0];
+    int* num = malloc(1280 * 720 * sizeof(int));
+    for (int i = 0; i < h->fenc->i_width[0] - 7; ++i) {
+        for (int j = 0; j < h->param.i_height - 7; ++j) {
+            num[j * 1280 + i] = xIntraBCHashTableIndex(plane + j * h->fenc->i_stride[0] + i, h->fenc->i_stride[0]);
+        }
+    }
+    FILE* f_write = fopen("HashKey.csv", "w");
+    for (int j = 0; j < h->param.i_height - 7; ++j) {
+        for (int i = 0; i < h->fenc->i_width[0] - 7; ++i) {
+            fprintf(f_write, "%d,", num[j * 1280 + i]);
+        }
+        fprintf(f_write, "\n");
+    }
+    fclose(f_write);
+}
+#endif // PrintPixelKey
+
+#endif
+
 static intptr_t slice_write( x264_t *h )
 {
     int i_skip;
@@ -2905,8 +3104,16 @@ static intptr_t slice_write( x264_t *h )
         pixel* unfilter_frame = malloc(sizeof(pixel) * h->fdec->i_stride[i] * h->fdec->i_lines[i]);
         h->frames.unfiletered_frame[i] = unfilter_frame;
     }
-#else
+#endif
 
+#if HashME
+    h->Hash_Info = (struct HashClass*)malloc(INTRABC_HASH_TABLESIZE * sizeof(struct HashClass));
+    for (int i = 0; i < INTRABC_HASH_TABLESIZE; ++i) {
+        h->Hash_Info[i] = malloc(sizeof(struct HashClass));
+        h->Hash_Info[i]->i_LengthIntraBCHashTable = 0;
+        h->Hash_Info[i]->m_pcIntraBCHashTable = NULL;
+    }
+    // 头结点都初始化为了 NULL
 #endif
 
     while( 1 )
@@ -3103,6 +3310,10 @@ cont:
 
 #endif // unfilter_frame_correct
 
+#if HashME
+        xIntraBCHashTableUpdate(h);
+#endif
+
         // 率控后处理
         // x264_ratecontrol_mb( h, mb_size ) < 0
         // 重新编码
@@ -3214,6 +3425,11 @@ cont:
         }
     }
 
+#if PrintHashInfo
+    //HashInfo(h);
+    PixelKey(h);
+#endif
+
 #if Pixel_pred
     FILE* f_pred = fopen("pred.yuv", "ab"); 
     {
@@ -3225,6 +3441,15 @@ cont:
         fclose(f_pred);
     }
 #endif // Pixel_pred
+
+#if PrintHashInfo
+
+#endif // PrintHashInfo
+
+
+#if HashME
+    ClearIntraBCHashTable(h->Hash_Info);
+#endif
 
 
     if( h->sh.i_last_mb < h->sh.i_first_mb )

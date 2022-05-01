@@ -821,8 +821,92 @@ void x264_me_search_ref( x264_t *h, x264_me_t *m, int16_t (*mvc)[2], int i_mvc, 
 }
 
 #if IntraBlockCopy_16_16
+
+#if HashME
+static unsigned int xIntraBCHashTableIndex(pixel* cur_subMB, int cxstride) {
+    int cxheight = 8, cxwidth = 8;
+    int totalSamples = cxheight * cxwidth;
+    unsigned int        hashIdx = 0;
+    unsigned int        grad = 0;
+    unsigned int        avgDC1 = 0;
+    unsigned int        avgDC2 = 0;
+    unsigned int        avgDC3 = 0;
+    unsigned int        avgDC4 = 0;
+    unsigned int        gradX = 0;
+    unsigned int        gradY = 0;
+    for (int y = 1; y < (cxheight >> 1); y++)
+    {
+        for (int x = 1; x < (cxwidth >> 1); x++)
+        {
+            avgDC1 += cur_subMB[y * cxstride + x];
+            gradX = abs(cur_subMB[y * cxstride + x] - cur_subMB[y * cxstride + x - 1]);
+            gradY = abs(cur_subMB[y * cxstride + x] - cur_subMB[(y - 1) * cxstride + x]);
+            grad += (gradX + gradY) >> 1;
+        }
+    }
+
+    for (int y = (cxheight >> 1); y < cxheight; y++)
+    {
+        for (int x = 1; x < (cxwidth >> 1); x++)
+        {
+            avgDC2 += cur_subMB[y * cxstride + x];
+            gradX = abs(cur_subMB[y * cxstride + x] - cur_subMB[y * cxstride + x - 1]);
+            gradY = abs(cur_subMB[y * cxstride + x] - cur_subMB[(y - 1) * cxstride + x]);
+            grad += (gradX + gradY) >> 1;
+        }
+    }
+
+    for (int y = 1; y < (cxheight >> 1); y++)
+    {
+        for (int x = (cxwidth >> 1); x < cxwidth; x++)
+        {
+            avgDC3 += cur_subMB[y * cxstride + x];
+            gradX = abs(cur_subMB[y * cxstride + x] - cur_subMB[y * cxstride + x - 1]);
+            gradY = abs(cur_subMB[y * cxstride + x] - cur_subMB[(y - 1) * cxstride + x]);
+            grad += (gradX + gradY) >> 1;
+        }
+    }
+
+    for (int y = (cxheight >> 1); y < cxheight; y++)
+    {
+        for (int x = (cxwidth >> 1); x < cxwidth; x++)
+        {
+            avgDC4 += cur_subMB[y * cxstride + x];
+            gradX = abs(cur_subMB[y * cxstride + x] - cur_subMB[y * cxstride + x - 1]);
+            gradY = abs(cur_subMB[y * cxstride + x] - cur_subMB[(y - 1) * cxstride + x]);
+            grad += (gradX + gradY) >> 1;
+        }
+    }
+
+    avgDC1 = (avgDC1 << 2) / (totalSamples);
+    avgDC2 = (avgDC2 << 2) / (totalSamples);
+    avgDC3 = (avgDC3 << 2) / (totalSamples);
+    avgDC4 = (avgDC4 << 2) / (totalSamples);
+
+    grad = grad / (totalSamples);
+
+    grad = (grad >> 4) & 0xf; // 4 bits
+
+    avgDC1 = (avgDC1 >> 5) & 0x7; // 3 bits
+    avgDC2 = (avgDC2 >> 5) & 0x7;
+    avgDC3 = (avgDC3 >> 5) & 0x7;
+    avgDC4 = (avgDC4 >> 5) & 0x7;
+
+    // Ò»¹²16bit
+    hashIdx = (avgDC1 << 13) + (avgDC2 << 10) + (avgDC3 << 7) + (avgDC4 << 4) + grad;
+
+    assert(hashIdx <= 0XFFFF);
+    return hashIdx;
+}
+
+static void* getHashLinklist(int OrgHashIndex, x264_t *h) {
+    return (void*)h->Hash_Info[OrgHashIndex]->m_pcIntraBCHashTable;
+}
+
+#endif // HashME
+
 //Fixed according to x264_me_search_ref
-void x264_IBC_search_ref(x264_t* h, x264_me_t* m, int* p_halfpel_thresh)
+void x264_IBC_search_ref(x264_t* h, x264_me_t* m, int* p_halfpel_thresh, int sub_i, int sub_j)
 {
     const int bw = x264_pixel_size[m->i_pixel].w;
     const int bh = x264_pixel_size[m->i_pixel].h;
@@ -872,11 +956,24 @@ void x264_IBC_search_ref(x264_t* h, x264_me_t* m, int* p_halfpel_thresh)
          * the predicted motion vector.
          *
          * Disclaimer: this is a post-hoc rationalization for why this hack works. */
-        bcost = h->pixf.mbcmp[i_pixel](p_fenc, FENC_STRIDE, &p_fref_w[bmy * stride + bmx], stride);
-
+        if (sub_i == -1 && sub_j == -1) {
+            //if(pmx < -15 && pmy < 0 || pmy < -15 && pmx >= -15) bcost = h->pixf.mbcmp[i_pixel](p_fenc, FENC_STRIDE, &p_fref_w[bmy * stride + bmx], stride);
+            boolean limit1 = (pmx < -15 && pmy < 0 && pmx > -h->mb.i_mb_x * 16 && pmy > -h->mb.i_mb_y * 16);
+            boolean limit2 = (pmy < -15 && pmx >= -15 && pmx < h->param.i_width - h->mb.i_mb_x * 16 - 16 && pmy > -h->mb.i_mb_y * 16);
+            if (limit1 || limit2) bcost = h->pixf.mbcmp[i_pixel](p_fenc, FENC_STRIDE, &p_fref_w[bmy * stride + bmx], stride);
+        }
+        else {
+            int tmp_x = pmx, tmp_y = pmy;
+            tmp_x -= sub_i * -7;
+            tmp_y -= sub_j * -7;
+            boolean limit1 = (tmp_x < -7 && tmp_y < 8 && pmx > -h->mb.i_mb_x * 16 - 8 * sub_i && pmy > -h->mb.i_mb_y * 16 - 8 * sub_j);
+            boolean limit2 = (tmp_y < -7 && tmp_x >= -7 && pmx < h->param.i_width - h->mb.i_mb_x * 16 - 8 && pmy > -h->mb.i_mb_y * 8);
+            if (limit1 || limit2) bcost = h->pixf.mbcmp[i_pixel](p_fenc, FENC_STRIDE, &p_fref_w[bmy * stride + bmx], stride);
+        }
+        
         /* Same as above, except the condition is simpler. */
-        if (pmv)
-            COST_MV(0, 0);
+        //if (pmv)
+            //COST_MV(0, 0);
     }
 
     enum MEmethod
@@ -980,6 +1077,64 @@ void x264_IBC_search_ref(x264_t* h, x264_me_t* m, int* p_halfpel_thresh)
         bcost >>= 4;
         }
     else if (method == FULL) {
+
+#if HashME
+        if (bw == 8) {
+            int OrgHashIndex = xIntraBCHashTableIndex(h->mb.pic.p_fenc[0], FENC_STRIDE);
+            IntraBCHashNode* NodeList = getHashLinklist(OrgHashIndex, h);
+            while (NodeList != NULL) {
+                /*COST_MV((NodeList->posX), (NodeList->posY));
+                NodeList = (IntraBCHashNode*)NodeList->next;*/
+                int mx = NodeList->posX - h->mb.i_mb_x * 16 - sub_i * 8;
+                int my = NodeList->posY - h->mb.i_mb_y * 16 - sub_j * 8;
+                do
+                {
+                    int cost = h->pixf.fpelcmp[i_pixel](p_fenc, FENC_STRIDE,
+                        &p_fref_w[(my)*stride + (mx)], stride)
+                        + BITS_MVD(mx, my);
+                    COPY3_IF_LT(bcost, cost, bmx, mx, bmy, my);
+                } while (0);
+                NodeList = NodeList->next;
+            }
+        }
+        else {
+#define COPY1_IF_LT_DJ(x,y,wid,col)\
+if( (y) < (x) )\
+    {(x) = (y);\
+    bestx = wid;\
+    besty = col;}
+
+            int x_max = h->mb.i_mb_x * 16;
+            int y_max = h->mb.i_mb_y * 16;
+            //bmx = (x_max - 128 > 0) ? x_max - 64 : 0;
+            //bmy = (y_max - 128 > 0) ? y_max - 64 : 0;
+            bmx = 0;
+            bmy = 0;
+            int bestx = bmx - x_max, besty = bmy - y_max;
+
+            for (int wid = bmx - x_max; wid < -16; wid += 2) {
+                for (int col = bmy - y_max; col < -16; col += 2) {
+                    COST_MV_X4_DIR(wid, col, wid + 1, col, wid, col + 1, wid + 1, col + 1, costs);
+                    COPY1_IF_LT_DJ(bcost, costs[0], wid, col);    // 0001
+                    COPY1_IF_LT_DJ(bcost, costs[1], wid + 1, col);    // 0011
+                    COPY1_IF_LT_DJ(bcost, costs[2], wid, col + 1);    // 0100
+                    COPY1_IF_LT_DJ(bcost, costs[3], wid + 1, col + 1);   // 1100
+                }
+            }
+
+            //for (int wid = 0; wid >= bmx - x_max; wid -= 2) {
+            //    for (int col = 0; col >= bmy - y_max; col -= 2) {
+            //        COST_MV_X4_DIR(wid, col, wid - 1, col, wid, col - 1, wid - 1, col - 1, costs);
+            //        COPY1_IF_LT_DJ(bcost, costs[0], wid, col);    // 0001
+            //        COPY1_IF_LT_DJ(bcost, costs[1], wid - 1, col);    // 0011
+            //        COPY1_IF_LT_DJ(bcost, costs[2], wid, col - 1);    // 0100
+            //        COPY1_IF_LT_DJ(bcost, costs[3], wid - 1, col - 1);   // 1100
+            //    }
+            //}
+            bmx = bestx;
+            bmy = besty;
+        }
+#else
 #define COPY1_IF_LT_DJ(x,y,wid,col)\
 if( (y) < (x) )\
     {(x) = (y);\
@@ -995,7 +1150,7 @@ if( (y) < (x) )\
         int bestx = bmx - x_max, besty = bmy - y_max;
 
         for (int wid = bmx - x_max; wid < -16; wid += 2) {
-            for (int col = bmy - y_max ; col < -16; col += 2) {
+            for (int col = bmy - y_max; col < -16; col += 2) {
                 COST_MV_X4_DIR(wid, col, wid + 1, col, wid, col + 1, wid + 1, col + 1, costs);
                 COPY1_IF_LT_DJ(bcost, costs[0], wid, col);    // 0001
                 COPY1_IF_LT_DJ(bcost, costs[1], wid + 1, col);    // 0011
@@ -1015,8 +1170,9 @@ if( (y) < (x) )\
         //}
         bmx = bestx;
         bmy = besty;
-    }
     
+#endif
+    }
 
     /* -> qpel mv */
     uint32_t bmv = pack16to32_mask(bmx, bmy);
@@ -1034,7 +1190,10 @@ if( (y) < (x) )\
         M32(m->mv) = bpred_cost < bcost ? bpred_mv : bmv_spel;
         m->cost = X264_MIN(bpred_cost, bcost);
     }
-
+    //dj
+    /*if (bmv == 0) {
+        m->cost = COST_MAX;
+    }*/
     /* subpel refine */
     /*if (h->mb.i_subpel_refine >= 2)
     {

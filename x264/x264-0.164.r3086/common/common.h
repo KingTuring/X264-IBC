@@ -270,6 +270,20 @@ typedef struct
     int i_ssim_cnt;
 } x264_frame_stat_t;
 
+#if HashME
+typedef struct IntraBCHashNode
+{
+    int posX;
+    int posY;
+    struct IntraBCHashNode* next;
+}IntraBCHashNode;
+
+struct HashClass{
+    IntraBCHashNode* m_pcIntraBCHashTable;
+    int i_LengthIntraBCHashTable;
+};
+#endif
+
 struct x264_t
 {
     /* encoder parameters */
@@ -416,6 +430,12 @@ struct x264_t
 #endif // unfilter_frame_correct
 
     } frames;
+
+#if HashME
+    struct HashClass** Hash_Info;
+    //IntraBCHashNode** m_pcIntraBCHashTable;
+    //int* i_LengthIntraBCHashTable;
+#endif
 
     /* current frame being encoded */
     x264_frame_t    *fenc;
