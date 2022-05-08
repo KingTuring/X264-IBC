@@ -55,10 +55,10 @@ typedef struct
     ALIGNED_8( int16_t mv[2] );
 } ALIGNED_64( x264_me_t );
 
-#if IntraBlockCopy_16_16
-// avc2code - IntraBlockCopy_16_16
+#if IntraBlockCopy
+// avc2code - IntraBlockCopy
 #define x264_IBC_search_ref x264_template(IBC_search_ref)
-void x264_IBC_search_ref(x264_t* h, x264_me_t* m, int* p_fullpel_thresh);
+void x264_IBC_search_ref(x264_t* h, x264_me_t* m, int* p_fullpel_thresh, int sub_i, int sub_j, int* valid);
 // void x264_IBC_search_ref(x264_t* h, x264_me_t* m, int16_t(*mvc)[2], int i_mvc, int* p_halfpel_thresh);
 #endif
 

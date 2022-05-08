@@ -831,7 +831,9 @@ REALIGN_STACK int x264_param_apply_profile( x264_param_t *param, const char *pro
     else if( p == PROFILE_MAIN )
     {
         param->analyse.b_transform_8x8 = 0;
-        param->i_cqm_preset = X264_CQM_FLAT;
+        //dj
+        param->i_cqm_preset = X264_CQM_JVT;
+        //param->i_cqm_preset = X264_CQM_FLAT;
         param->psz_cqm_file = NULL;
     }
     return 0;

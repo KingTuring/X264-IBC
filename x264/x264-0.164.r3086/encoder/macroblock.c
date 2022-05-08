@@ -1010,7 +1010,7 @@ static ALWAYS_INLINE void macroblock_encode_internal( x264_t *h, int plane_count
     if( !b_force_no_skip )
     {
         if( 
-#if IntraBlockCopy_16_16
+#if IntraBlockCopy
             h->i_nal_ref_idc != NAL_PRIORITY_HIGHEST &&
 #endif
             h->mb.i_type == P_L0 && h->mb.i_partition == D_16x16 &&

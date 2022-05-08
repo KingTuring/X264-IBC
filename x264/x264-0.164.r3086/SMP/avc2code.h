@@ -10,19 +10,33 @@
 #define ReferenceFrameFixed 1
 #define SpsFixed 1
 #define DecFrameFixed 1
-#define IntraBlockCopy_16_16 1
-#define IntraBlockCopy_8_8 1
+#define IntraBlockCopy 1
 #define Avc2CliLog 1
 #define RecFrameOutput 1
 #define BatResOutput 1
 #define Pixel_pred 0
 #define MotionVectorOutout 0
+
+#if IntraBlockCopy
 #define unfilter_frame_correct 1
 #define WriteSei 1
 #define HashME 1
-#define PrintHashInfo 1
+#define PrintHashInfo 0
 #define Hash_16 0
 #define Hash_8 1
+#else
+#define unfilter_frame_correct 0
+#define WriteSei 0
+#define HashME 0
+#define PrintHashInfo 0
+#define Hash_16 0
+#define Hash_8 0
+#endif
+
+#if Hash_8
+#define Hash_table_len 1
+#endif // Hash_8
+
 
 int StrideY_twopass;
 int StrideUV_twopass;

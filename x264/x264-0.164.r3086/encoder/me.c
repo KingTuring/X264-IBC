@@ -820,7 +820,7 @@ void x264_me_search_ref( x264_t *h, x264_me_t *m, int16_t (*mvc)[2], int i_mvc, 
     }
 }
 
-#if IntraBlockCopy_16_16
+#if IntraBlockCopy
 
 #if HashME
 static unsigned int xIntraBCHashTableIndex(pixel* cur_subMB, int cxstride) {
@@ -892,6 +892,13 @@ static unsigned int xIntraBCHashTableIndex(pixel* cur_subMB, int cxstride) {
     avgDC3 = (avgDC3 >> 5) & 0x7;
     avgDC4 = (avgDC4 >> 5) & 0x7;
 
+    //grad = (grad >> 5) & 0xf; // 4 bits
+
+    //avgDC1 = (avgDC1 >> 6) & 0x7; // 3 bits
+    //avgDC2 = (avgDC2 >> 6) & 0x7;
+    //avgDC3 = (avgDC3 >> 6) & 0x7;
+    //avgDC4 = (avgDC4 >> 6) & 0x7;
+
     // Ò»¹²16bit
     hashIdx = (avgDC1 << 13) + (avgDC2 << 10) + (avgDC3 << 7) + (avgDC4 << 4) + grad;
 
@@ -906,7 +913,7 @@ static void* getHashLinklist(int OrgHashIndex, x264_t *h) {
 #endif // HashME
 
 //Fixed according to x264_me_search_ref
-void x264_IBC_search_ref(x264_t* h, x264_me_t* m, int* p_halfpel_thresh, int sub_i, int sub_j)
+void x264_IBC_search_ref(x264_t* h, x264_me_t* m, int* p_halfpel_thresh, int sub_i, int sub_j, int* valid)
 {
     const int bw = x264_pixel_size[m->i_pixel].w;
     const int bh = x264_pixel_size[m->i_pixel].h;
@@ -941,6 +948,8 @@ void x264_IBC_search_ref(x264_t* h, x264_me_t* m, int* p_halfpel_thresh, int sub
     /* Try extra predictors if provided.  If subme >= 3, check subpel predictors,
      * otherwise round them to fullpel. */
     {
+        //pmx = (pmx + 2) >> 2;
+        //pmy = (pmy + 2) >> 2;
         /* Calculate and check the fullpel MVP first */
         bmx = pmx = x264_clip3(FPEL(m->mvp[0]), mv_x_min, mv_x_max);
         bmy = pmy = x264_clip3(FPEL(m->mvp[1]), mv_y_min, mv_y_max);
@@ -960,15 +969,21 @@ void x264_IBC_search_ref(x264_t* h, x264_me_t* m, int* p_halfpel_thresh, int sub
             //if(pmx < -15 && pmy < 0 || pmy < -15 && pmx >= -15) bcost = h->pixf.mbcmp[i_pixel](p_fenc, FENC_STRIDE, &p_fref_w[bmy * stride + bmx], stride);
             boolean limit1 = (pmx < -15 && pmy < 0 && pmx > -h->mb.i_mb_x * 16 && pmy > -h->mb.i_mb_y * 16);
             boolean limit2 = (pmy < -15 && pmx >= -15 && pmx < h->param.i_width - h->mb.i_mb_x * 16 - 16 && pmy > -h->mb.i_mb_y * 16);
-            if (limit1 || limit2) bcost = h->pixf.mbcmp[i_pixel](p_fenc, FENC_STRIDE, &p_fref_w[bmy * stride + bmx], stride);
+            if (limit1 || limit2) {
+                bcost = h->pixf.mbcmp[i_pixel](p_fenc, FENC_STRIDE, &p_fref_w[bmy * stride + bmx], stride);
+                *valid = 1;
+            }
         }
         else {
             int tmp_x = pmx, tmp_y = pmy;
-            tmp_x -= sub_i * -7;
-            tmp_y -= sub_j * -7;
-            boolean limit1 = (tmp_x < -7 && tmp_y < 8 && pmx > -h->mb.i_mb_x * 16 - 8 * sub_i && pmy > -h->mb.i_mb_y * 16 - 8 * sub_j);
-            boolean limit2 = (tmp_y < -7 && tmp_x >= -7 && pmx < h->param.i_width - h->mb.i_mb_x * 16 - 8 && pmy > -h->mb.i_mb_y * 8);
-            if (limit1 || limit2) bcost = h->pixf.mbcmp[i_pixel](p_fenc, FENC_STRIDE, &p_fref_w[bmy * stride + bmx], stride);
+            tmp_x -= sub_i * -8;
+            tmp_y -= sub_j * -8;
+            boolean limit1 = (tmp_x < -7 && tmp_y < 8 && tmp_x > - h->mb.i_mb_x * 16  && tmp_y > - h->mb.i_mb_y * 16);
+            boolean limit2 = (tmp_y < -7 && tmp_x >= -7 && tmp_x < h->param.i_width - h->mb.i_mb_x * 16 && tmp_y > - h->mb.i_mb_y * 16);
+            if (limit1 || limit2) {
+                bcost = h->pixf.mbcmp[i_pixel](p_fenc, FENC_STRIDE, &p_fref_w[bmy * stride + bmx], stride);
+                *valid = 1;
+            }
         }
         
         /* Same as above, except the condition is simpler. */
@@ -1079,6 +1094,7 @@ void x264_IBC_search_ref(x264_t* h, x264_me_t* m, int* p_halfpel_thresh, int sub
     else if (method == FULL) {
 
 #if HashME
+        //int tmp_x = bmx, tmp_y = bmy;
         if (bw == 8) {
             int OrgHashIndex = xIntraBCHashTableIndex(h->mb.pic.p_fenc[0], FENC_STRIDE);
             IntraBCHashNode* NodeList = getHashLinklist(OrgHashIndex, h);
@@ -1172,6 +1188,7 @@ if( (y) < (x) )\
         bmy = besty;
     
 #endif
+        if (bmx != pmx || bmy != pmx) *valid = 1;
     }
 
     /* -> qpel mv */

@@ -650,7 +650,7 @@ static ALWAYS_INLINE void macroblock_load_pic_pointers( x264_t *h, int mb_x, int
     }
     pixel *plane_src, **filtered_src;
 
-#if IntraBlockCopy_16_16
+#if IntraBlockCopy
     for (int j = 0; j < h->mb.pic.i_fref[0] + h->param.b_IBC; j++)
     {
 #else

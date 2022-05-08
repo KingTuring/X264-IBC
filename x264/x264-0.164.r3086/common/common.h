@@ -705,8 +705,6 @@ struct x264_t
 
 #if unfilter_frame_correct
             pixel* p_fref_unfiletered[2];
-#else
-
 #endif
 
         } pic;

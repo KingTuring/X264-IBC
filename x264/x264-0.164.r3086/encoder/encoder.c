@@ -2842,6 +2842,7 @@ static ALWAYS_INLINE void bitstream_restore( x264_t *h, x264_bs_bak_t *bak, int 
 static void ClearIntraBCHashTable(struct HashClass** Hash_Info) {
     for (int idx = 0; idx < INTRABC_HASH_TABLESIZE; idx++)
     {
+        (*Hash_Info[idx]).i_LengthIntraBCHashTable = 0;
         if ((*Hash_Info[idx]).m_pcIntraBCHashTable == NULL)
         {
             continue;
@@ -2863,18 +2864,22 @@ static void ClearIntraBCHashTable(struct HashClass** Hash_Info) {
 
 static void setHashLinklist(IntraBCHashNode* hashLinklist, int hashIdx, struct HashClass** Hash_Info)
 {
+#if Hash_table_len
     if ((*Hash_Info[hashIdx]).i_LengthIntraBCHashTable == 10) {
         int i = 8;
         IntraBCHashNode* temp = (*Hash_Info[hashIdx]).m_pcIntraBCHashTable;
         while (i-- > 0) {
             temp = temp->next;
         }
-        temp->next = NULL;
         free(temp->next);
+        temp->next = NULL;
+        --(*Hash_Info[hashIdx]).i_LengthIntraBCHashTable;
     }
     else {
         ++(*Hash_Info[hashIdx]).i_LengthIntraBCHashTable;
-    }
+    }  
+#endif // Hash_table_len
+
     hashLinklist->next = (*Hash_Info[hashIdx]).m_pcIntraBCHashTable;
     (*Hash_Info[hashIdx]).m_pcIntraBCHashTable = hashLinklist;
     // m_pcIntraBCHashTable[hashIdx] 放的是头结点
@@ -2949,6 +2954,13 @@ static unsigned int xIntraBCHashTableIndex(pixel* cur_subMB, int cxstride) {
     avgDC2 = (avgDC2 >> 5) & 0x7;
     avgDC3 = (avgDC3 >> 5) & 0x7;
     avgDC4 = (avgDC4 >> 5) & 0x7;
+
+    //grad = (grad >> 5) & 0xf; // 4 bits
+
+    //avgDC1 = (avgDC1 >> 6) & 0x7; // 3 bits
+    //avgDC2 = (avgDC2 >> 6) & 0x7;
+    //avgDC3 = (avgDC3 >> 6) & 0x7;
+    //avgDC4 = (avgDC4 >> 6) & 0x7;
 
     // 一共16bit
     hashIdx = (avgDC1 << 13) + (avgDC2 << 10) + (avgDC3 << 7) + (avgDC4 << 4) + grad;
@@ -3099,22 +3111,24 @@ static intptr_t slice_write( x264_t *h )
     i_mb_x = h->sh.i_first_mb % h->mb.i_mb_width;
     i_skip = 0;
 
+    if (h->i_frame == 0) {
 #if unfilter_frame_correct
-    for (int i = 0; i < 2; ++i) {
-        pixel* unfilter_frame = malloc(sizeof(pixel) * h->fdec->i_stride[i] * h->fdec->i_lines[i]);
-        h->frames.unfiletered_frame[i] = unfilter_frame;
-    }
+        for (int i = 0; i < 2; ++i) {
+            pixel* unfilter_frame = malloc(sizeof(pixel) * h->fdec->i_stride[i] * h->fdec->i_lines[i]);
+            h->frames.unfiletered_frame[i] = unfilter_frame;
+        }
 #endif
 
 #if HashME
-    h->Hash_Info = (struct HashClass*)malloc(INTRABC_HASH_TABLESIZE * sizeof(struct HashClass));
-    for (int i = 0; i < INTRABC_HASH_TABLESIZE; ++i) {
-        h->Hash_Info[i] = malloc(sizeof(struct HashClass));
-        h->Hash_Info[i]->i_LengthIntraBCHashTable = 0;
-        h->Hash_Info[i]->m_pcIntraBCHashTable = NULL;
-    }
-    // 头结点都初始化为了 NULL
+        h->Hash_Info = (struct HashClass*)malloc(INTRABC_HASH_TABLESIZE * sizeof(struct HashClass));
+        for (int i = 0; i < INTRABC_HASH_TABLESIZE; ++i) {
+            h->Hash_Info[i] = malloc(sizeof(struct HashClass));
+            h->Hash_Info[i]->i_LengthIntraBCHashTable = 0;
+            h->Hash_Info[i]->m_pcIntraBCHashTable = NULL;
+        }
+        // 头结点都初始化为了 NULL
 #endif
+    }
 
     while( 1 )
     {
@@ -3311,7 +3325,11 @@ cont:
 #endif // unfilter_frame_correct
 
 #if HashME
-        xIntraBCHashTableUpdate(h);
+        //printf("%d, %d\n", h->mb.i_mb_x, h->mb.i_mb_y);
+        if (h->i_frame != 0 && h->mb.i_mb_x == 0 && h->mb.i_mb_x == 0) {
+            int stop = 0;
+        }
+        if(h->i_nal_ref_idc == NAL_PRIORITY_HIGHEST) xIntraBCHashTableUpdate(h);
 #endif
 
         // 率控后处理
@@ -3548,9 +3566,7 @@ cont:
 #endif //  RecFrameOutput
 
 #if unfilter_frame_correct
-    for (int i = 0; i < 2; ++i) free(h->frames.unfiletered_frame[i]);
-#else
-
+    //for (int i = 0; i < 2; ++i) free(h->frames.unfiletered_frame[i]);
 #endif // unfilter_frame_correct
 
     return 0;
